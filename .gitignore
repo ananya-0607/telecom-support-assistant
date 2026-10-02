@@ -1,0 +1,22 @@
+# Python environment
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Temporary Excel files
+~$*.xlsx
+
+# Generated search indexes and logs
+data/indexes/
+logs/
+
+# Operating system files
+Thumbs.db
+.DS_Store
