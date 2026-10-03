@@ -6,3 +6,5 @@ pydantic>=2,<3
 pypdf
 transformers>=4.40,<5
 pytest>=8,<10
+sentence-transformers>=3,<4
+qdrant-client>=1.12,<2
