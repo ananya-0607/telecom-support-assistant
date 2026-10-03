@@ -1,2 +1,5 @@
 pandas
 openpyxl
+groq
+python-dotenv
+pydantic>=2,<3
