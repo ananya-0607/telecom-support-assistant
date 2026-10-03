@@ -29,17 +29,18 @@ class KBChunk(Record):
     source_type: Literal["kb"] = "kb"
     document_id: str
     chunk_number: int = Field(ge=1)
-    section_heading: str | None
+    title: str | None = None
     pages: list[int]
     text: str = Field(min_length=1)
     token_count: int = Field(gt=0)
     categories: list[Category] = Field(default_factory=list)
     products: list[Product] = Field(default_factory=list)
     metadata_status: Literal["pending", "classified", "reviewed"] = "pending"
-    metadata_scope: Literal["unknown", "general", "specific"] = "unknown"
     chunking_version: str
+    metadata_model: str | None = None
+    metadata_prompt_version: str | None = None
+    metadata_cache_key: str | None = None
 
 class TextBlock(BaseModel):
     text: str
     pages: list[int]
-    heading: str | None = None

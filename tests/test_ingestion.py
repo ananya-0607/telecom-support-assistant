@@ -18,12 +18,13 @@ class WordTokenizer:
 def chunks(blocks):
     return chunk_blocks(blocks, WordTokenizer(), "doc", "manual.pdf", "a"*64, "1", max_tokens=48, overlap_tokens=8)
 
-def test_repeated_headings():
-    blocks = [TextBlock(text="Check service.", pages=[1], heading="Checklist"),
-              TextBlock(text="Check bill.", pages=[2], heading="Billing"),
-              TextBlock(text="Verify result.", pages=[3], heading="Checklist")]
+def test_plain_blocks_combine_without_section_boundaries():
+    blocks = [TextBlock(text="Check service.", pages=[1]),
+              TextBlock(text="Check bill.", pages=[2]),
+              TextBlock(text="Verify result.", pages=[3])]
     result = chunks(blocks)
-    assert len({c.source_id for c in result}) == 3
+    assert len(result) == 1
+    assert result[0].pages == [1, 2, 3]
     assert [c.source_id for c in result] == [c.source_id for c in chunks(blocks)]
     assert all(c.metadata_status == "pending" and not c.categories for c in result)
 
@@ -36,7 +37,7 @@ def test_cross_page_and_long_text():
     assert " ".join(c.text for c in result).split() == text.split()
 
 def test_heading_budget_and_identity():
-    blocks = [TextBlock(text=" ".join([f"item{i}"]*10)+".", pages=[i+1], heading="Checks") for i in range(10)]
+    blocks = [TextBlock(text=" ".join([f"item{i}"]*10)+".", pages=[i+1]) for i in range(10)]
     assert all(c.token_count <= 48 for c in chunks(blocks))
     assert document_identity("a.pdf") != document_identity("b.pdf")
 

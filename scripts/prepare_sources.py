@@ -49,7 +49,7 @@ def main():
             documents.append({"source_file": relative, "source_version": version, "chunks": len(prepared), **details})
             print(f"{path.name}: {details['pages']} pages, {len(prepared)} chunks")
         summary = {
-            "schema_version": 2, "prepared_at_utc": datetime.now(timezone.utc).isoformat(),
+            "schema_version": 3, "prepared_at_utc": datetime.now(timezone.utc).isoformat(),
             "taxonomy_version": taxonomy["version"],
             "training_tickets": len(training), "evaluation_tickets": len(evaluation),
             "total_tickets": len(training) + len(evaluation),
@@ -57,13 +57,13 @@ def main():
             "kb_chunks": len(records), "documents": documents,
             "ticket_source_version": hashlib.sha256(tickets_path.read_bytes()).hexdigest(),
             "chunking": {"version": CHUNKING_VERSION, "tokenizer": TOKENIZER_MODEL,
-                         "max_tokens_including_heading_and_special_tokens": MAX_TOKENS,
+                         "max_tokens_including_special_tokens": MAX_TOKENS,
                          "overlap_tokens_max": OVERLAP_TOKENS},
             "notes": [
                 "KB category/product metadata is pending; no LLM calls made.",
                 "Evaluation tickets must not enter retrieval or few-shot prompts.",
                 "No embeddings, incremental index updates, or source manifest yet.",
-                "Cover/contents/reference text retained; inspect and curate before indexing.",
+                "All extracted text retained; chunking does not detect or filter section types.",
                 "Text-PDF extraction does not verify complex tables or column reading order.",
             ],
         }

@@ -6,7 +6,7 @@ from .schemas import KBChunk, TextBlock
 TOKENIZER_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 MAX_TOKENS = 240
 OVERLAP_TOKENS = 32
-CHUNKING_VERSION = "paragraph-token-v1"
+CHUNKING_VERSION = "text-token-v2"
 
 def load_tokenizer(cache_dir):
     from transformers import AutoTokenizer
@@ -23,10 +23,9 @@ def chunk_blocks(blocks, tokenizer, document_id, source_file, source_version, ta
     if not 0 <= overlap_tokens < max_tokens // 2:
         raise ValueError("Overlap must be less than half the token budget.")
     chunks, current = [], []
-    current_heading = None
     def render(parts):
         body = "\n\n".join(part.text for part in parts)
-        return body, f"{current_heading}\n{body}" if current_heading else body
+        return body, body
     def emit():
         if not current:
             return
@@ -38,7 +37,7 @@ def chunk_blocks(blocks, tokenizer, document_id, source_file, source_version, ta
         chunks.append(KBChunk(
             source_id=f"KB-{document_id}-{source_version[:16]}-{number:04d}-{processing_id}",
             document_id=document_id, source_file=source_file, source_version=source_version,
-            taxonomy_version=taxonomy_version, chunk_number=number, section_heading=current_heading,
+            taxonomy_version=taxonomy_version, chunk_number=number,
             pages=sorted({p for b in current for p in b.pages}), text=body, search_text=search,
             token_count=token_count(tokenizer, search),
             chunking_version=f"{CHUNKING_VERSION}:{max_tokens}:{overlap_tokens}"))
@@ -48,7 +47,7 @@ def chunk_blocks(blocks, tokenizer, document_id, source_file, source_version, ta
         parts = []
         for sentence in re.split(r"(?<=[.!?])\s+", block.text):
             if token_count(tokenizer, sentence) <= budget:
-                parts.append(TextBlock(text=sentence, pages=block.pages, heading=block.heading))
+                parts.append(TextBlock(text=sentence, pages=block.pages))
                 continue
             offsets = tokenizer(sentence, add_special_tokens=False, return_offsets_mapping=True)["offset_mapping"]
             start = 0
@@ -60,17 +59,11 @@ def chunk_blocks(blocks, tokenizer, document_id, source_file, source_version, ta
                     fragment = sentence[offsets[start][0]:offsets[end-1][1]].strip()
                 if token_count(tokenizer, fragment) > budget:
                     raise ValueError("Cannot fit source text within token budget.")
-                parts.append(TextBlock(text=fragment, pages=block.pages, heading=block.heading))
+                parts.append(TextBlock(text=fragment, pages=block.pages))
                 start = end
         return parts
     for block in blocks:
-        if block.heading != current_heading:
-            emit()
-            current = []
-            current_heading = block.heading
-        budget = max_tokens - token_count(tokenizer, current_heading or "") - 4
-        if budget < 16:
-            raise ValueError("Heading too long for token budget; review extraction.")
+        budget = max_tokens - 4
         for part in split_block(block, budget):
             if current and token_count(tokenizer, render(current + [part])[1]) > max_tokens:
                 emit()

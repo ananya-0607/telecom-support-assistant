@@ -4,11 +4,6 @@ from collections import Counter
 from pypdf import PdfReader
 from .schemas import TextBlock
 
-def heading_line(text):
-    return len(text) <= 120 and bool(
-        re.match(r"^(?:\d+(?:\.\d+)+\s+\S|Chapter\s+\d+\b|Section\s+\d+\b)", text, re.I)
-        or (len(text.split()) <= 12 and text.isupper() and any(c.isalpha() for c in text)))
-
 def extract_pdf(path):
     reader = PdfReader(path)
     if reader.is_encrypted:
@@ -21,9 +16,8 @@ def extract_pdf(path):
     for lines in lines_by_page:
         edges.update(set(lines[:2] + lines[-2:]))
     repeated = {line for line, count in edges.items() if len(raw_pages) >= 3
-                and count >= max(3, int(len(raw_pages) * .6 + .999)) and not heading_line(line)}
+                and count >= max(3, int(len(raw_pages) * .6 + .999))}
     blocks, warnings = [], []
-    heading = None
     for number, (raw, lines) in enumerate(zip(raw_pages, lines_by_page), 1):
         if not raw.strip():
             raise ValueError(f"No text on {path.name} page {number}; blank/image pages need review or OCR.")
@@ -34,17 +28,13 @@ def extract_pdf(path):
         paragraph = []
         def flush():
             if paragraph:
-                blocks.append(TextBlock(text=" ".join(paragraph), pages=[number], heading=heading))
+                blocks.append(TextBlock(text=" ".join(paragraph), pages=[number]))
                 paragraph.clear()
         for index, line in enumerate(lines):
             edge = index < 2 or index >= len(lines) - 2
             if edge and re.fullmatch(r"(?:Page\s+)?\d+(?:\s*(?:of|/)\s*\d+)?", line, re.I):
                 continue
             if edge and line in repeated:
-                continue
-            if heading_line(line):
-                flush()
-                heading = line
                 continue
             if re.match(r"^(?:\d+[.)]\s+|[\u2022\u25cf*-]\s+)", line):
                 flush()
