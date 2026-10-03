@@ -1,0 +1,39 @@
+{
+ "version": "2",
+ "categories": {
+  "Broadband intermittent drops": "Repeated broadband disconnections.",
+  "Slow speed": "Poor throughput or responsiveness while connected.",
+  "No connectivity / outage": "Internet unavailable or suspected outage.",
+  "Router / modem hardware": "Gateway hardware, power or thermal fault.",
+  "Billing dispute": "Disputed charges, payments or adjustments.",
+  "Plan change": "Changes to plans, allowances or effective dates.",
+  "Mobile signal": "Mobile coverage, voice or radio quality.",
+  "SIM / activation / porting": "SIM activation, replacement or number transfer.",
+  "Installation / technician visit": "Installation or field appointments.",
+  "Account / login / KYC": "Account access, identity checks or security.",
+  "Other / Unknown": "Unrelated or insufficiently specified requests."
+ },
+ "products": {
+  "Fiber Broadband & Gateway": "Fiber, ONT, gateway, Wi-Fi and mesh.",
+  "Mobile Postpaid / SIM": "Mobile services, SIM and porting.",
+  "Billing & Account Portal": "Billing, payments and account access.",
+  "Home Installation / Technical Visit": "Installation and field services.",
+  "General Inquiry / Other": "General or unidentified service."
+ },
+ "severities": {
+  "Low": "Routine enquiry or limited inconvenience with service substantially available.",
+  "Medium": "Degraded service, a partial fault or an administrative restriction.",
+  "High": "Loss of an important service, significant business disruption, suspected compromise or equipment safety concern.",
+  "Critical": "Major operational disruption requiring the designated critical-response process."
+ },
+ "sentiments": {
+  "Frustrated": "Expresses difficulty or distress after repeated obstacles.",
+  "Angry": "Expresses strong anger or hostility.",
+  "Panicked": "Expresses fear or alarm with difficulty remaining calm.",
+  "Annoyed": "Expresses irritation or mild displeasure.",
+  "Confused": "Expresses uncertainty or difficulty understanding.",
+  "Neutral": "No clear emotional tone is expressed.",
+  "Urgent": "Expresses a pressing need for timely action.",
+  "Disappointed": "Expresses unmet expectations or dissatisfaction."
+ }
+}

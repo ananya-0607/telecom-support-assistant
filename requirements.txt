@@ -3,3 +3,6 @@ openpyxl
 groq
 python-dotenv
 pydantic>=2,<3
+pypdf
+transformers>=4.40,<5
+pytest>=8,<10
