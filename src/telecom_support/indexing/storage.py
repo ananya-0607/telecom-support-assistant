@@ -1,9 +1,10 @@
 """SQLite is the complete record store; passage IDs link it to Qdrant."""
 import json
 import sqlite3
+from contextlib import closing
 
 def write_database(path, records, passages, manifest):
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute("PRAGMA foreign_keys = ON")
         connection.executescript("""
             CREATE TABLE sources (
@@ -32,7 +33,7 @@ def write_database(path, records, passages, manifest):
 
 def fetch_evidence(path, passage_id):
     """Later retrieval uses a Qdrant point ID to fetch text and its full source."""
-    with sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True) as connection:
+    with closing(sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)) as connection:
         row = connection.execute("""SELECT p.text, s.record_json FROM passages p
             JOIN sources s ON s.source_id=p.source_id WHERE p.passage_id=?""",
             (passage_id,)).fetchone()
