@@ -38,6 +38,7 @@ def chunk_blocks(blocks, tokenizer, document_id, source_file, source_version, ta
             source_id=f"KB-{document_id}-{source_version[:16]}-{number:04d}-{processing_id}",
             document_id=document_id, source_file=source_file, source_version=source_version,
             taxonomy_version=taxonomy_version, chunk_number=number,
+            content_hash=hashlib.sha256(body.encode('utf-8')).hexdigest(),
             pages=sorted({p for b in current for p in b.pages}), text=body, search_text=search,
             token_count=token_count(tokenizer, search),
             chunking_version=f"{CHUNKING_VERSION}:{max_tokens}:{overlap_tokens}"))

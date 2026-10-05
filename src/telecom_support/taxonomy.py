@@ -1,10 +1,14 @@
 """One label registry for ingestion, prompts and response validation.
 
-Loaded when the process starts. Restart commands after editing the taxonomy.
+Category/product validation follows the active registry and staged PDF additions.
+The published snapshot carries the authoritative taxonomy after activation.
 """
 import json
 from enum import Enum
 from pathlib import Path
+from contextvars import ContextVar
+from contextlib import contextmanager
+from pydantic_core import core_schema
 
 from pydantic import BaseModel, ConfigDict
 
@@ -13,6 +17,11 @@ TAXONOMY_PATH = Path(__file__).resolve().parents[2] / "config/taxonomy.json"
 
 def load_taxonomy():
     data = json.loads(TAXONOMY_PATH.read_text(encoding="utf-8"))
+    active_path = TAXONOMY_PATH.parent.parent/'data/indexes/search/active.json'
+    if active_path.exists():
+        active = json.loads(active_path.read_text(encoding='utf-8'))
+        if 'taxonomy' in active:
+            data = active['taxonomy']
     if not isinstance(data.get("version"), str) or not data["version"]:
         raise ValueError("Taxonomy needs a nonempty string version.")
     for name in ("categories", "products", "severities", "sentiments"):
@@ -26,9 +35,58 @@ def load_taxonomy():
 
 
 TAXONOMY = load_taxonomy()
-# String enums let Pydantic both reject unknown labels and publish JSON enums.
-Category = Enum("Category", {f"LABEL_{i}": label for i, label in enumerate(TAXONOMY["categories"])}, type=str)
-Product = Enum("Product", {f"LABEL_{i}": label for i, label in enumerate(TAXONOMY["products"])}, type=str)
+_staged = ContextVar('staged_taxonomy', default=None)
+
+
+def current_taxonomy():
+    return _staged.get() or TAXONOMY
+
+
+@contextmanager
+def staged_taxonomy(data):
+    token = _staged.set(data)
+    try:
+        yield
+    finally:
+        _staged.reset(token)
+
+
+def activate_taxonomy(data):
+    TAXONOMY.clear()
+    TAXONOMY.update(data)
+
+
+class RegisteredLabel(str):
+    registry = ''
+
+    @property
+    def value(self):
+        return str(self)
+
+    @classmethod
+    def validate(cls, value):
+        if value not in current_taxonomy()[cls.registry]:
+            raise ValueError(f'Unregistered {cls.registry} label: {value}')
+        return cls(value)
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source, handler):
+        return core_schema.no_info_after_validator_function(cls.validate,
+            core_schema.str_schema(), ref=cls.__name__)
+
+    @classmethod
+    def __get_pydantic_json_schema__(cls, schema, handler):
+        result = handler(schema)
+        result.update(type='string', enum=list(current_taxonomy()[cls.registry]))
+        return result
+
+
+class Category(RegisteredLabel):
+    registry = 'categories'
+
+
+class Product(RegisteredLabel):
+    registry = 'products'
 Severity = Enum("Severity", {f"LABEL_{i}": label for i, label in enumerate(TAXONOMY["severities"])}, type=str)
 Sentiment = Enum("Sentiment", {f"LABEL_{i}": label for i, label in enumerate(TAXONOMY["sentiments"])}, type=str)
 

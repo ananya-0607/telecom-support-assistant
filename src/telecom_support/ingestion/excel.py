@@ -26,8 +26,6 @@ def prepare_excel(path: Path, source_file: str, taxonomy: dict):
                              ("severity", "severities"), ("sentiment", "sentiments")]:
         if not frame[column].isin(taxonomy[registry]).all():
             raise ValueError(f"Unregistered {column}; review taxonomy.")
-    if frame.loc[frame.category.eq("Other / Unknown"), "split"].ne("test").any():
-        raise ValueError("Other / Unknown tickets must be test-only.")
     version = hashlib.sha256(path.read_bytes()).hexdigest()
     train, test = [], []
     for row in frame[REQUIRED].to_dict("records"):

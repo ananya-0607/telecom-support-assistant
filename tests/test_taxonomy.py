@@ -27,3 +27,8 @@ def test_prompt_includes_shared_definitions():
     for registry in ("categories", "products", "severities", "sentiments"):
         for description in TAXONOMY[registry].values():
             assert description in prompt
+
+
+def test_three_severity_and_sentiment_levels():
+    assert list(TAXONOMY['severities']) == ['Low', 'Medium', 'High']
+    assert set(TAXONOMY['sentiments']) == {'Neutral', 'Frustrated', 'Angry'}

@@ -1,5 +1,6 @@
 """Validate prepared records and create token-bounded searchable passages."""
 import uuid
+import json
 from pathlib import Path
 from telecom_support.ingestion.schemas import TicketRecord, KBChunk, TextBlock
 from telecom_support.ingestion.chunking import chunk_blocks
@@ -24,6 +25,21 @@ def load_records(index_dir):
             raise ValueError(f"Empty source file: {filename}")
     if len({r.source_id for r in records}) != len(records):
         raise ValueError("Duplicate source IDs in prepared records.")
+    jobs = [(path, json.loads(path.read_text(encoding='utf-8'))) for path in
+        (Path(index_dir)/'additions').glob('*/status.json')]
+    for status_path, status in sorted(jobs, key=lambda item:(item[1]['created_at'], item[0].parent.name)):
+        if status['status'] != 'completed' or status.get('no_changes'):
+            continue
+        if status.get('replaced_document_id'):
+            records = [r for r in records if not isinstance(r, KBChunk) or r.document_id != status['replaced_document_id']]
+        for data in json.loads((status_path.parent/'records.json').read_text(encoding='utf-8')):
+            schema = TicketRecord if data['source_type'] == 'ticket' else KBChunk
+            record = schema.model_validate(data)
+            if isinstance(record, TicketRecord) and record.split != 'train':
+                raise ValueError('Evaluation tickets cannot be added to retrieval.')
+            records.append(record)
+    if len({r.source_id for r in records}) != len(records):
+        raise ValueError('Duplicate source IDs including additions.')
     return records
 
 def make_passages(records, tokenizer):

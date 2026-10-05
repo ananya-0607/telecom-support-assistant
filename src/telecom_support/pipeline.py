@@ -12,8 +12,10 @@ class ResolutionPipeline:
     def __init__(self, root, index, llm, threshold=0.30):
         self.index, self.llm, self.threshold = index, llm, threshold
         data = json.loads((root/'data/indexes/classification_examples.json').read_text(encoding='utf-8'))
-        if data['taxonomy_version'] != TAXONOMY['version'] or not data['examples']:
+        if not data['examples']:
             raise ValueError('Regenerate classification examples for the current taxonomy.')
+        # Additive labels preserve valid existing examples; new classes use definitions.
+        self.taxonomy_version = TAXONOMY['version']
         self.examples = data['examples']
         for example in self.examples:
             ComplaintLabels.model_validate(example['labels'])

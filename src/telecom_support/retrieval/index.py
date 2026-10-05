@@ -7,9 +7,9 @@ from telecom_support.indexing.vectors import COLLECTION
 from telecom_support.ingestion.chunking import TOKENIZER_MODEL
 
 class SearchIndex:
-    def __init__(self, root):
+    def __init__(self, root, embedder=None, build_id=None):
         folder = root/'data/indexes/search'
-        active = json.loads((folder/'active.json').read_text())['build_id']
+        active = build_id or json.loads((folder/'active.json').read_text())['build_id']
         if len(active) != 32 or any(c not in '0123456789abcdef' for c in active):
             raise ValueError('Invalid active build ID.')
         self.path = folder/'builds'/active
@@ -23,7 +23,7 @@ class SearchIndex:
         for row in self.rows:
             row['categories'] = json.loads(row.pop('categories_json'))
             row['products'] = json.loads(row.pop('products_json'))
-        self.embedder = LocalEmbedder(root/'data/indexes/embedding_model_cache')
+        self.embedder = embedder or LocalEmbedder(root/'data/indexes/embedding_model_cache')
         self.client = QdrantClient(path=str(self.path/'qdrant'))
 
     def close(self):

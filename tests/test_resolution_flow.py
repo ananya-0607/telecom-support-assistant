@@ -147,5 +147,6 @@ def test_interface_displays_citations(monkeypatch):
     app.text_area[0].set_value('My internet is slow')
     app.button[0].click().run()
     assert not app.exception
-    assert any('[S1]' in m.value for m in app.markdown)
+    assert not any('[S1]' in m.value for m in app.markdown)
+    assert any('Cable checks' in expander.label for expander in app.expander)
     assert 'result' in app.session_state

@@ -24,10 +24,14 @@ class TicketRecord(Record):
     resolution_steps: str
     resolution_summary: str
     split: Literal["train", "test"]
+    origin: Literal['historical', 'agent_reviewed_generated'] = 'historical'
+    generated_response: dict | None = None
 
 class KBChunk(Record):
     source_type: Literal["kb"] = "kb"
     document_id: str
+    document_name: str | None = None
+    content_hash: str | None = Field(default=None, min_length=64, max_length=64)
     chunk_number: int = Field(ge=1)
     title: str | None = None
     pages: list[int]

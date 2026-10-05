@@ -1,0 +1,226 @@
+{
+  "revision": "telecom-only-evaluation-v1",
+  "note": "Superseded by covered_evaluation_scenarios.json; retained for replacement provenance.",
+  "cases": [
+    {
+      "ticket_id": "T-0091",
+      "category": "Broadband intermittent drops",
+      "product": "Fiber Broadband & Gateway",
+      "severity": "Medium",
+      "sentiment": "Neutral",
+      "customer_complaint": "The fibre connection goes off briefly each afternoon when a configured gateway reboot runs. We want that unintended schedule checked.",
+      "conversation": "Customer: The fibre connection goes off briefly each afternoon when a configured gateway reboot runs. We want that unintended schedule checked.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Verify the configured scheduled-reboot policy.\n2. Match reboot events to reported interruptions.\n3. Disable the unintended reboot schedule with customer consent.\n4. Verify normal operation at the formerly scheduled time.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Verify the configured scheduled-reboot policy.\n2. Match reboot events to reported interruptions.\n3. Disable the unintended reboot schedule with customer consent.\n4. Verify normal operation at the formerly scheduled time.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0092",
+      "category": "Slow speed",
+      "product": "Fiber Broadband & Gateway",
+      "severity": "Medium",
+      "sentiment": "Neutral",
+      "customer_complaint": "Only the guest wireless network has very low throughput; staff access is normal. Please investigate the guest-network bandwidth cap.",
+      "conversation": "Customer: Only the guest wireless network has very low throughput; staff access is normal. Please investigate the guest-network bandwidth cap.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Compare guest and staff performance under controlled conditions.\n2. Inspect per-SSID bandwidth settings.\n3. Correct the unintended guest-network cap with administrator consent.\n4. Verify guest access while preserving network separation.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Compare guest and staff performance under controlled conditions.\n2. Inspect per-SSID bandwidth settings.\n3. Correct the unintended guest-network cap with administrator consent.\n4. Verify guest access while preserving network separation.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0093",
+      "category": "No connectivity / outage",
+      "product": "Fiber Broadband & Gateway",
+      "severity": "High",
+      "sentiment": "Neutral",
+      "customer_complaint": "No device at our office can reach the internet after a fresh connection attempt. WAN address allocation fails with a subscriber-pool capacity error.",
+      "conversation": "Customer: No device at our office can reach the internet after a fresh connection attempt. WAN address allocation fails with a subscriber-pool capacity error.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Check WAN address-allocation failures and access-service alarms.\n2. Confirm subscriber pool exhaustion through network operations.\n3. Restore authorised pool capacity or allocation handling.\n4. Verify new sessions receive valid WAN addresses.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Check WAN address-allocation failures and access-service alarms.\n2. Confirm subscriber pool exhaustion through network operations.\n3. Restore authorised pool capacity or allocation handling.\n4. Verify new sessions receive valid WAN addresses.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0094",
+      "category": "Router / modem hardware",
+      "product": "Fiber Broadband & Gateway",
+      "severity": "High",
+      "sentiment": "Neutral",
+      "customer_complaint": "Our fibre router was exposed to leaking water and is no longer in use. We need a safe authorised equipment assessment rather than advice to dry or open it.",
+      "conversation": "Customer: Our fibre router was exposed to leaking water and is no longer in use. We need a safe authorised equipment assessment rather than advice to dry or open it.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Keep water-damaged equipment out of use and avoid unsafe handling.\n2. Record safe observations without opening the enclosure.\n3. Arrange authorised assessment and replacement according to eligibility.\n4. Verify service on the safely installed replacement.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Keep water-damaged equipment out of use and avoid unsafe handling.\n2. Record safe observations without opening the enclosure.\n3. Arrange authorised assessment and replacement according to eligibility.\n4. Verify service on the safely installed replacement.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0095",
+      "category": "Billing dispute",
+      "product": "Billing & Account Portal",
+      "severity": "Medium",
+      "sentiment": "Neutral",
+      "customer_complaint": "The billing portal shows two completed debits against one telecom invoice. Please review the duplicate payment and the remaining account balance.",
+      "conversation": "Customer: The billing portal shows two completed debits against one telecom invoice. Please review the duplicate payment and the remaining account balance.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Verify identity through the approved billing channel.\n2. Reconcile both settled payment references against the invoice.\n3. Obtain authorised approval for the duplicate-payment refund or agreed balance treatment.\n4. Confirm the processed adjustment and remaining balance.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Verify identity through the approved billing channel.\n2. Reconcile both settled payment references against the invoice.\n3. Obtain authorised approval for the duplicate-payment refund or agreed balance treatment.\n4. Confirm the processed adjustment and remaining balance.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0096",
+      "category": "Plan change",
+      "product": "Fiber Broadband & Gateway",
+      "severity": "Low",
+      "sentiment": "Neutral",
+      "customer_complaint": "Please explain the eligible order and separate billing terms for a new fibre service at our second branch. Keep our current circuit unchanged.",
+      "conversation": "Customer: Please explain the eligible order and separate billing terms for a new fibre service at our second branch. Keep our current circuit unchanged.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Verify authorised business contact and new-site eligibility.\n2. Distinguish a second service order from modifying the existing line.\n3. Present documented separate-billing and contract terms.\n4. Process the accepted eligible new-site order and confirm both service records.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Verify authorised business contact and new-site eligibility.\n2. Distinguish a second service order from modifying the existing line.\n3. Present documented separate-billing and contract terms.\n4. Process the accepted eligible new-site order and confirm both service records.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0097",
+      "category": "Mobile signal",
+      "product": "Mobile Postpaid / SIM",
+      "severity": "Medium",
+      "sentiment": "Neutral",
+      "customer_complaint": "The mobile signal is poor around one sector following antenna maintenance. Multiple supported phones reproduce it in that area only.",
+      "conversation": "Customer: The mobile signal is poor around one sector following antenna maintenance. Multiple supported phones reproduce it in that area only.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Collect location-specific supported-device observations.\n2. Compare sector alarms and authorised post-work measurements.\n3. Correct the verified sector configuration through radio engineering.\n4. Retest coverage in the affected area.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Collect location-specific supported-device observations.\n2. Compare sector alarms and authorised post-work measurements.\n3. Correct the verified sector configuration through radio engineering.\n4. Retest coverage in the affected area.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0098",
+      "category": "SIM / activation / porting",
+      "product": "Mobile Postpaid / SIM",
+      "severity": "High",
+      "sentiment": "Neutral",
+      "customer_complaint": "The new SIM order has an incorrect serial assignment and activation is blocked. I cannot make or receive calls on the replacement service.",
+      "conversation": "Customer: The new SIM order has an incorrect serial assignment and activation is blocked. I cannot make or receive calls on the replacement service.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Verify identity and authorised order references securely.\n2. Compare SIM serial assignment with the intended order.\n3. Correct the verified assignment through activation operations.\n4. Activate the eligible SIM and verify service.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Verify identity and authorised order references securely.\n2. Compare SIM serial assignment with the intended order.\n3. Correct the verified assignment through activation operations.\n4. Activate the eligible SIM and verify service.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0099",
+      "category": "Installation / technician visit",
+      "product": "Home Installation / Technical Visit",
+      "severity": "Low",
+      "sentiment": "Neutral",
+      "customer_complaint": "Before booking the fibre engineer, please explain the authorised route and building-permission process for our apartment installation.",
+      "conversation": "Customer: Before booking the fibre engineer, please explain the authorised route and building-permission process for our apartment installation.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Verify the recorded building permission requirement.\n2. Coordinate an approved route proposal with authorised building contacts.\n3. Obtain the necessary permission before scheduling installation.\n4. Complete the authorised visit and verify service.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Verify the recorded building permission requirement.\n2. Coordinate an approved route proposal with authorised building contacts.\n3. Obtain the necessary permission before scheduling installation.\n4. Complete the authorised visit and verify service.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0100",
+      "category": "Account / login / KYC",
+      "product": "Billing & Account Portal",
+      "severity": "Medium",
+      "sentiment": "Neutral",
+      "customer_complaint": "I cannot complete telecom account sign-in. Password entry succeeds, but MFA fails while my phone time is wrong. Please explain the approved recovery checks.",
+      "conversation": "Customer: I cannot complete telecom account sign-in. Password entry succeeds, but MFA fails while my phone time is wrong. Please explain the approved recovery checks.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Verify the approved MFA recovery context without collecting codes.\n2. Compare device time settings with authenticator guidance.\n3. Restore supported automatic time synchronisation with consent.\n4. Verify normal MFA sign-in without bypassing protection.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Verify the approved MFA recovery context without collecting codes.\n2. Compare device time settings with authenticator guidance.\n3. Restore supported automatic time synchronisation with consent.\n4. Verify normal MFA sign-in without bypassing protection.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0191",
+      "category": "Broadband intermittent drops",
+      "product": "Fiber Broadband & Gateway",
+      "severity": "Medium",
+      "sentiment": "Frustrated",
+      "customer_complaint": "After leaving the fibre connection unused, we have to wake the connection again. Could you check its idle-timeout and always-on session settings? I am frustrated with this situation.",
+      "conversation": "Customer: After leaving the fibre connection unused, we have to wake the connection again. Could you check its idle-timeout and always-on session settings? I am frustrated with this situation.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Inspect broadband session policy and idle-timeout logs.\n2. Distinguish deliberate session shutdown from a line fault.\n3. Enable the supported always-on session policy with authorisation.\n4. Test access after an extended idle period.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Inspect broadband session policy and idle-timeout logs.\n2. Distinguish deliberate session shutdown from a line fault.\n3. Enable the supported always-on session policy with authorisation.\n4. Test access after an extended idle period.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0192",
+      "category": "Slow speed",
+      "product": "Fiber Broadband & Gateway",
+      "severity": "Medium",
+      "sentiment": "Frustrated",
+      "customer_complaint": "The broadband plan is faster now, but the gateway shaping configuration is left at the old 50 Mbps rate. Please check the authorised settings. I am frustrated with this situation.",
+      "conversation": "Customer: The broadband plan is faster now, but the gateway shaping configuration is left at the old 50 Mbps rate. Please check the authorised settings. I am frustrated with this situation.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Compare subscribed bandwidth with configured traffic-shaping rates.\n2. Check for other load or line limitations.\n3. Update shaping to approved values appropriate to the service.\n4. Verify throughput and prioritisation after the change.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Compare subscribed bandwidth with configured traffic-shaping rates.\n2. Check for other load or line limitations.\n3. Update shaping to approved values appropriate to the service.\n4. Verify throughput and prioritisation after the change.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0193",
+      "category": "No connectivity / outage",
+      "product": "Fiber Broadband & Gateway",
+      "severity": "High",
+      "sentiment": "Frustrated",
+      "customer_complaint": "We disabled IPv6 and lost all internet access on our DS-Lite broadband service. Please check how to restore its approved transport configuration. I am frustrated with this situation.",
+      "conversation": "Customer: We disabled IPv6 and lost all internet access on our DS-Lite broadband service. Please check how to restore its approved transport configuration. I am frustrated with this situation.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Confirm the provisioned access architecture and supported settings.\n2. Inspect DS-Lite tunnel and IPv6 transport status.\n3. Restore the approved required configuration with consent.\n4. Verify IPv4 and IPv6 service access.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Confirm the provisioned access architecture and supported settings.\n2. Inspect DS-Lite tunnel and IPv6 transport status.\n3. Restore the approved required configuration with consent.\n4. Verify IPv4 and IPv6 service access.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0194",
+      "category": "Router / modem hardware",
+      "product": "Fiber Broadband & Gateway",
+      "severity": "Medium",
+      "sentiment": "Frustrated",
+      "customer_complaint": "Our router has visible external aerial damage. Ethernet access works normally, while wireless coverage is now weak. Please advise the approved hardware process. I am frustrated with this situation.",
+      "conversation": "Customer: Our router has visible external aerial damage. Ethernet access works normally, while wireless coverage is now weak. Please advise the approved hardware process. I am frustrated with this situation.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Compare wired service with wireless behaviour.\n2. Document visible antenna damage without dismantling equipment.\n3. Arrange approved antenna or router replacement according to the model.\n4. Verify wireless coverage on the replacement hardware.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Compare wired service with wireless behaviour.\n2. Document visible antenna damage without dismantling equipment.\n3. Arrange approved antenna or router replacement according to the model.\n4. Verify wireless coverage on the replacement hardware.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0195",
+      "category": "Billing dispute",
+      "product": "Billing & Account Portal",
+      "severity": "Medium",
+      "sentiment": "Frustrated",
+      "customer_complaint": "The equipment return receipt matches my rented gateway serial, yet the telecom account still has a non-return charge. Please reconcile the return records. I am frustrated with this situation.",
+      "conversation": "Customer: The equipment return receipt matches my rented gateway serial, yet the telecom account still has a non-return charge. Please reconcile the return records. I am frustrated with this situation.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Verify the equipment serial and authorised return reference.\n2. Reconcile courier and depot receipt records.\n3. Correct the validated return status and remove the ineligible fee through billing.\n4. Issue the revised final balance.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Verify the equipment serial and authorised return reference.\n2. Reconcile courier and depot receipt records.\n3. Correct the validated return status and remove the ineligible fee through billing.\n4. Issue the revised final balance.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0196",
+      "category": "Plan change",
+      "product": "Mobile Postpaid / SIM",
+      "severity": "Low",
+      "sentiment": "Frustrated",
+      "customer_complaint": "Before travelling, I want to compare the supported roaming add-on for my mobile plan, including destination eligibility, cost and validity. I am frustrated with this situation.",
+      "conversation": "Customer: Before travelling, I want to compare the supported roaming add-on for my mobile plan, including destination eligibility, cost and validity. I am frustrated with this situation.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Review destination eligibility and current roaming entitlement.\n2. Explain documented option price validity and limits.\n3. Activate the customer-approved eligible roaming option.\n4. Verify entitlement before travel.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Review destination eligibility and current roaming entitlement.\n2. Explain documented option price validity and limits.\n3. Activate the customer-approved eligible roaming option.\n4. Verify entitlement before travel.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0197",
+      "category": "Mobile signal",
+      "product": "Mobile Postpaid / SIM",
+      "severity": "Medium",
+      "sentiment": "Frustrated",
+      "customer_complaint": "The handset registers normally without its metal case, but signal quality drops when the case is attached. Please advise a supported accessory check. I am frustrated with this situation.",
+      "conversation": "Customer: The handset registers normally without its metal case, but signal quality drops when the case is attached. Please advise a supported accessory check. I am frustrated with this situation.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Compare reception with and without the removable accessory.\n2. Verify no concurrent network incident.\n3. Recommend a compatible accessory according to manufacturer guidance.\n4. Confirm normal registration without the obstructing case.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Compare reception with and without the removable accessory.\n2. Verify no concurrent network incident.\n3. Recommend a compatible accessory according to manufacturer guidance.\n4. Confirm normal registration without the obstructing case.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0198",
+      "category": "SIM / activation / porting",
+      "product": "Mobile Postpaid / SIM",
+      "severity": "High",
+      "sentiment": "Frustrated",
+      "customer_complaint": "The eSIM is valid but will not register because this phone has an original-carrier lock. I need the legitimate eligibility process to restore mobile service. I am frustrated with this situation.",
+      "conversation": "Customer: The eSIM is valid but will not register because this phone has an original-carrier lock. I need the legitimate eligibility process to restore mobile service. I am frustrated with this situation.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Verify device compatibility and documented lock state without requesting secret codes.\n2. Explain the original carrier's authorised unlock requirement.\n3. Proceed only after confirmed eligible unlock or supported replacement device.\n4. Verify registration of the authorised eSIM.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Verify device compatibility and documented lock state without requesting secret codes.\n2. Explain the original carrier's authorised unlock requirement.\n3. Proceed only after confirmed eligible unlock or supported replacement device.\n4. Verify registration of the authorised eSIM.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0199",
+      "category": "Installation / technician visit",
+      "product": "Home Installation / Technical Visit",
+      "severity": "Low",
+      "sentiment": "Frustrated",
+      "customer_complaint": "Please arrange installation planning for a property with facade restrictions. We need the approved entry route and permissions confirmed first. I am frustrated with this situation.",
+      "conversation": "Customer: Please arrange installation planning for a property with facade restrictions. We need the approved entry route and permissions confirmed first. I am frustrated with this situation.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Record the site-specific facade restrictions.\n2. Arrange an authorised route and permissions assessment.\n3. Proceed only after the required approvals are obtained.\n4. Verify the installation follows the approved route and service works.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Record the site-specific facade restrictions.\n2. Arrange an authorised route and permissions assessment.\n3. Proceed only after the required approvals are obtained.\n4. Verify the installation follows the approved route and service works.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    },
+    {
+      "ticket_id": "T-0200",
+      "category": "Account / login / KYC",
+      "product": "Billing & Account Portal",
+      "severity": "Low",
+      "sentiment": "Frustrated",
+      "customer_complaint": "I denied camera access to the telecom account app and now its KYC capture is blank. Please explain the necessary supported permission without requesting private documents in chat. I am frustrated with this situation.",
+      "conversation": "Customer: I denied camera access to the telecom account app and now its KYC capture is blank. Please explain the necessary supported permission without requesting private documents in chat. I am frustrated with this situation.\nAgent: Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Check manufacturer-supported app permission settings.\n2. Explain the specific documented permission needed for secure capture.\n3. Enable only the necessary permission with consent.\n4. Submit through the secure app and verify eligible review completion.\nCustomer: The condition was verified through the approved checks.\nAgent: The authorised process was completed.\nCustomer: The outcome was checked and the request resolved.",
+      "resolution_steps": "Use the documented checks below. Any corrective action is conditional on verifying the relevant condition and obtaining the stated authorisation.\n1. Check manufacturer-supported app permission settings.\n2. Explain the specific documented permission needed for secure capture.\n3. Enable only the necessary permission with consent.\n4. Submit through the secure app and verify eligible review completion.",
+      "resolution_summary": "Use the supported procedure and verify the result; do not assume the historical diagnosis is already confirmed."
+    }
+  ]
+}

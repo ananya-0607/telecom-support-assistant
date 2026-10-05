@@ -13,6 +13,7 @@ from telecom_support.indexing.storage import write_database
 from telecom_support.indexing.embeddings import LocalEmbedder
 from telecom_support.indexing.vectors import write_vectors, COLLECTION
 from telecom_support.ingestion.chunking import TOKENIZER_MODEL
+from telecom_support.taxonomy import TAXONOMY
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -31,7 +32,7 @@ def main():
         build_id = uuid.uuid4().hex
         snapshot = index_dir / 'search' / 'builds' / build_id
         snapshot.mkdir(parents=True)
-        manifest = {'schema_version': 1, 'build_id': build_id,
+        manifest = {'schema_version': 1, 'build_id': build_id, 'taxonomy':TAXONOMY,
             'created_at': datetime.now(timezone.utc).isoformat(), 'model': TOKENIZER_MODEL,
             'dimension': len(vectors[0]), 'collection': COLLECTION,
             'ticket_sources': sum(r.source_type == 'ticket' for r in records),
@@ -45,7 +46,7 @@ def main():
         (snapshot / 'manifest.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
         active = index_dir / 'search' / 'active.json'
         temporary = active.with_suffix('.tmp')
-        temporary.write_text(json.dumps({'build_id': build_id}, indent=2), encoding='utf-8')
+        temporary.write_text(json.dumps({'build_id': build_id, 'taxonomy':TAXONOMY}, indent=2), encoding='utf-8')
         temporary.replace(active)
         print(json.dumps(manifest, indent=2))
         print(f'PASS: Verified snapshot activated at {snapshot}')

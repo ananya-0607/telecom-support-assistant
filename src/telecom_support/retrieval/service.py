@@ -14,8 +14,8 @@ def matches(row, categories, products, scope):
 
 def retrieve(index, complaint, labels, threshold=0.30, per_type=3):
     vector = index.embedder.encode([complaint])[0].tolist()
-    categories = [c.value for c in labels.categories if c.value != 'Other / Unknown']
-    products = [p.value for p in labels.products if p.value != 'General Inquiry / Other']
+    categories = [c.value for c in labels.categories]
+    products = [p.value for p in labels.products]
     evidence, diagnostics = [], []
     for source_type in ['ticket','kb']:
         for scope in (['category_product','product','global'] if categories or products else ['global']):

@@ -3,6 +3,7 @@
 
 # Python cache
 __pycache__/
+.pytest_cache/
 *.py[cod]
 
 # Secrets
@@ -15,6 +16,7 @@ __pycache__/
 
 # Generated search indexes and logs
 data/indexes/
+data/backups/
 logs/
 
 # Operating system files

@@ -91,11 +91,6 @@ def main():
     if not combined["split"].isin(["train", "test"]).all():
         raise ValueError("Unexpected train/test split value.")
 
-    other_rows = combined["category"].eq("Other / Unknown")
-
-    if combined.loc[other_rows, "split"].ne("test").any():
-        raise ValueError("Other / Unknown tickets must be test-only.")
-
     # Both source files reuse IDs, so create fresh combined IDs.
     new_ids = [
         f"T-{number:04d}"
