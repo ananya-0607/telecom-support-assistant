@@ -2,7 +2,7 @@
 
 A support-agent workspace that converts raw telecom complaints into classification, suggested resolution steps, information to ask, and supporting citations. It combines historical tickets and knowledge-base PDFs through semantic and keyword retrieval.
 
-**Status:** working local prototype with tested knowledge updates, evaluations and monitoring. Docker build/startup was verified; bundled-demo first-start verification on a fresh laptop is pending. Suggested actions require agent review; production readiness is not claimed.
+**Status:** working local prototype with tested knowledge updates, evaluations and monitoring. Docker build/startup and bundled-demo startup on another laptop were verified by the developer. Suggested actions require agent review; production readiness is not claimed.
 
 ## Contents
 
@@ -517,7 +517,7 @@ docker compose start
 docker compose down
 ```
 
-Verify one complaint, an uploaded source and `/metrics`, then restart containers and confirm knowledge remains searchable. Metrics counters reset on API restart; host files remain. The original container build/startup was verified by the developer. The new bundled-demo startup path still requires a fresh-laptop container check.
+Verify one complaint, an uploaded source and `/metrics`, then restart containers and confirm knowledge remains searchable. Metrics counters reset on API restart; host files remain. The original container build/startup was verified by the developer. The developer also confirmed successful bundled-demo startup and application checking on another laptop.
 
 ### One-command demo startup on a fresh laptop
 
@@ -566,13 +566,13 @@ Implemented exploration: controlled taxonomy extension, PDF replacement, metadat
 |---|---|
 | Problem understanding | Scope, ticket lifecycle, dataset limitations |
 | Architecture | Overall/component/update diagrams with inputs/outputs |
-| Executable GitHub code | Source/setup provided; final push and clean-checkout verification required |
+| Executable GitHub code | Source/setup and bundled demo provided; another-laptop startup checked |
 | Semantic retrieval/RAG | Working UI/API, MiniLM/Qdrant, BM25/RRF and citations |
 | Evolving data/classes | Ticket/PDF additions, replacement and controlled taxonomy |
 | Additional exploration | Hash reuse, staged labels and snapshots |
 | Evals/system health | Results, 71 tests, manual checks and metrics/logs |
 | Design/production scale | Tradeoffs and future deployment considerations |
-| Docker packaging | Original build/startup verified; portable demo startup awaiting fresh-laptop check |
+| Docker packaging | Build/startup and portable demo checked on another laptop |
 
 ## Folder structure
 
