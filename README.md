@@ -2,7 +2,7 @@
 
 A support-agent workspace that converts raw telecom complaints into classification, suggested resolution steps, information to ask, and supporting citations. It combines historical tickets and knowledge-base PDFs through semantic and keyword retrieval.
 
-**Status:** working local prototype with tested knowledge updates, evaluations and monitoring. Docker packaging is pending. Suggested actions require agent review; production readiness is not claimed.
+**Status:** working local prototype with tested knowledge updates, evaluations and monitoring. Docker configuration is provided; container build/runtime verification remains pending. Suggested actions require agent review; production readiness is not claimed.
 
 ## Contents
 
@@ -475,9 +475,56 @@ Example request:
 
 Output keys: `classification`, `resolution` (summary, cited steps, missing information, escalation), `sources`, `retrieval`, `timings_seconds`. Extra fields are rejected. A 6,000-character HTTP limit plus embedding token limit applies. Input validation uses 422, busy processing 503, handled service errors currently 400, unexpected failures 500. Provider-status mapping/unrelated-question handling need improvement.
 
-### Docker status
+### Docker deployment
 
-**Pending:** packaging/commands have not been implemented or verified. Intended deployment separates UI/backend and persists indexes/additions/logs with environment-provided secrets. Update this section with tested instructions before marking it complete.
+```mermaid
+flowchart LR
+    B[Browser on localhost 8501] --> UI[Streamlit container]
+    UI --> API[FastAPI container on api 8000]
+    API --> G[Groq API]
+    API --> D[Host data: SQLite, Qdrant, caches and additions]
+    API --> C[Host config: taxonomy]
+    API --> L[Host logs]
+```
+
+**Input:** complaint/upload requests, runtime Groq credentials and prepared host data.  
+**Output:** two container services, responses and persistent knowledge/logs.  
+**Files:** `Dockerfile`, `compose.yaml`, `.dockerignore`.
+
+Docker Desktop must run Linux containers. Stop native API/UI and evaluation processes first; only one process can own the local Qdrant index. The compose configuration reuses your existing `data/` and `config/`; a fresh checkout still needs the preparation steps above, or the container preparation commands below. Secrets/data are excluded from image layers. Compose reads your local `.env` and gives the key only to the API. Do not share expanded `docker compose config` output because it can contain credentials; use `config --quiet` for validation.
+
+```powershell
+docker compose config --quiet
+docker compose up --build -d
+docker compose ps
+Invoke-RestMethod http://127.0.0.1:8000/health
+Invoke-RestMethod http://127.0.0.1:8000/metrics
+docker compose logs --tail 50 api
+```
+
+First build downloads Python/CPU dependencies; startup may download model files if not cached. UI waits for API health. Ports bind only to localhost. Both images run as a non-root user; Linux host mount directories must be writable by UID 10001 (Windows Docker Desktop handles mounts differently). No automatic metadata requests or index rebuild happen on service startup.
+
+For preparation entirely inside Docker on a fresh checkout, build images then run commands one at a time **before** `up`:
+
+```powershell
+docker compose build
+docker compose run --rm --no-deps api python scripts/prepare_sources.py
+docker compose run --rm --no-deps api python scripts/classify_kb.py --delay 60
+docker compose run --rm --no-deps api python scripts/prepare_classification_examples.py
+docker compose run --rm --no-deps api python scripts/build_index.py
+docker compose up -d
+```
+
+Do not repeat preparation for an existing working index. Before stopping during PDF ingestion, wait for completion; the 15-minute grace period is finite and long jobs may still be interrupted.
+
+```powershell
+docker compose stop
+docker compose start
+# Remove containers/network, keeping host-mounted data:
+docker compose down
+```
+
+Verify one complaint, an uploaded source and `/metrics`, then restart containers and confirm knowledge remains searchable. Metrics counters reset on API restart; host files remain. **Verification status:** configuration added; actual image build, startup and persistence check not yet confirmed.
 
 ## Demo
 
@@ -522,7 +569,7 @@ Implemented exploration: controlled taxonomy extension, PDF replacement, metadat
 | Additional exploration | Hash reuse, staged labels and snapshots |
 | Evals/system health | Results, 70 tests, manual checks and metrics/logs |
 | Design/production scale | Tradeoffs and future deployment considerations |
-| Docker packaging | Pending implementation/verification |
+| Docker packaging | Configuration provided; build/runtime verification pending |
 
 ## Folder structure
 

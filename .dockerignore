@@ -1,0 +1,16 @@
+# Secrets and host/generated files must not enter the image build context.
+.env
+.env.*
+!.env.example
+.git
+.venv
+venv
+**/__pycache__
+**/*.pyc
+.pytest_cache
+data
+logs
+tests
+*.xlsx
+*.pdf
+node_modules
