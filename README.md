@@ -70,23 +70,26 @@ Test cases are synthetic paraphrases of supported problems, four per original ca
 ## Overall architecture
 
 ```mermaid
-flowchart TD
-    UI[Streamlit workspace] --> API[FastAPI backend]
-    API --> CL[Groq classification]
-    CL --> RET[Metadata-scoped retrieval]
-    RET --> Q[MiniLM and Qdrant cosine search]
-    RET --> BM[BM25 passage ranking]
-    Q --> F[RRF and semantic eligibility]
-    BM --> F
-    F --> SQL[SQLite evidence lookup]
-    SQL --> GEN[Groq grounded generation]
-    GEN --> VAL[Schema and citation-ID checks]
-    VAL --> OUT[Labels, actions, questions, citations]
-    OUT --> UI
-    UI --> ING[Knowledge ingestion jobs]
-    ING --> SQL
-    ING --> Q
-    API --> MON[Metrics and safe logs]
+flowchart TB
+    subgraph RESOLVE[Resolve a complaint]
+        UI[Streamlit complaint form] --> API[FastAPI resolve endpoint]
+        API --> CL[Groq classification]
+        CL --> RET[Scoped semantic and BM25 search]
+        RET --> F[RRF ranking and semantic eligibility]
+        F --> SQL[SQLite evidence lookup]
+        SQL --> GEN[Groq grounded generation]
+        GEN --> VAL[Schema and citation-ID checks]
+        VAL --> OUT[Display labels, steps, questions and citations]
+    end
+    subgraph KNOWLEDGE[Add or update knowledge]
+        ADD[Streamlit Add knowledge page] --> WRITE[FastAPI ingestion endpoints]
+        WRITE --> ING[Prepare records, metadata and embeddings]
+        ING --> STORE[Verify SQLite and Qdrant snapshot]
+        STORE --> ACTIVE[Activate searchable knowledge]
+    end
+    subgraph HEALTH[Operational monitoring]
+        REQUEST[Resolve request outcomes and timings] --> MON[Metrics and safe logs]
+    end
 ```
 
 **Input:** raw complaint or approved knowledge submission.  
@@ -98,21 +101,23 @@ Streamlit and FastAPI are the UI/backend service boundary. Classification/retrie
 ## Initial preparation
 
 ```mermaid
-flowchart TD
-    X[Excel] --> V[Validate and split]
-    V --> T[Training records]
-    V --> E[Held-out records kept separate]
-    P[PDFs] --> EX[Extract text/pages]
-    EX --> CH[Token chunks with overlap]
-    CH --> META[Groq titles and labels]
-    T --> PASS[Search passages]
+flowchart TB
+    subgraph SOURCES[Prepare source records]
+        X[Excel] --> V[Validate and separate held-out records]
+        V --> T[Training ticket records]
+        P[Text PDFs] --> EX[Extract text and pages]
+        EX --> CH[Token chunks with overlap]
+        CH --> META[Groq titles and labels]
+    end
+    T --> PASS[Prepare search passages]
     META --> PASS
-    PASS --> EMB[MiniLM embeddings]
-    PASS --> DB[SQLite]
-    EMB --> Q[Qdrant]
+    PASS --> EMB[Create MiniLM embeddings]
+    EMB --> DB[Write SQLite records and Qdrant vectors]
     DB --> CHECK[Verify snapshot and activate]
-    Q --> CHECK
-    T --> FEW[Training-only examples]
+    subgraph AUX[Separate preparation outputs]
+        E[Held-out tickets: evaluation only]
+        FEW[Training-only classification examples]
+    end
 ```
 
 **Input:** workbook and text PDFs.  
@@ -142,18 +147,19 @@ Few-shot prompting demonstrates classification without training model weights. N
 ## Retrieval
 
 ```mermaid
-flowchart TD
+flowchart TB
     C[Complaint and labels] --> S[Category/product scope]
     S --> V[MiniLM and cosine search]
     S --> K[BM25 keyword ranking]
     V --> R[RRF combine ranks]
     K --> R
     R --> G[Keep semantic-qualified passages]
-    G --> D[Deduplicate source IDs]
+    G --> CHECK{Any qualifying evidence?}
+    CHECK -->|Yes| D[Deduplicate source IDs]
+    CHECK -->|No| F[Repeat search and eligibility checks in broader scope]
+    F --> FALLBACK[Try product-only, then global; stop at first qualifying scope]
+    FALLBACK --> D
     D --> O[Up to three tickets and three KB sources]
-    G --> F[If none qualify: product then global]
-    F --> V
-    F --> K
 ```
 
 **Input:** complaint, labels, indexed passages and threshold.  
