@@ -71,25 +71,17 @@ Test cases are synthetic paraphrases of supported problems, four per original ca
 
 ```mermaid
 flowchart TB
-    subgraph RESOLVE[Resolve a complaint]
-        UI[Streamlit complaint form] --> API[FastAPI resolve endpoint]
-        API --> CL[Groq classification]
-        CL --> RET[Scoped semantic and BM25 search]
-        RET --> F[RRF ranking and semantic eligibility]
-        F --> SQL[SQLite evidence lookup]
-        SQL --> GEN[Groq grounded generation]
-        GEN --> VAL[Schema and citation-ID checks]
-        VAL --> OUT[Display labels, steps, questions and citations]
-    end
-    subgraph KNOWLEDGE[Add or update knowledge]
-        ADD[Streamlit Add knowledge page] --> WRITE[FastAPI ingestion endpoints]
-        WRITE --> ING[Prepare records, metadata and embeddings]
-        ING --> STORE[Verify SQLite and Qdrant snapshot]
-        STORE --> ACTIVE[Activate searchable knowledge]
-    end
-    subgraph HEALTH[Operational monitoring]
-        REQUEST[Resolve request outcomes and timings] --> MON[Metrics and safe logs]
-    end
+    UI[Agent enters complaint in Streamlit]
+    API[FastAPI receives request]
+    CL[Groq classifies the complaint]
+    RET[Semantic search and BM25 keyword search]
+    F[RRF ranking and semantic eligibility]
+    SQL[Retrieve full evidence from SQLite]
+    GEN[Groq drafts supported resolution steps]
+    VAL[Validate structure and citation IDs]
+    MON[Record request outcome and timings]
+    OUT[Show classification, steps, questions and citations]
+    UI --> API --> CL --> RET --> F --> SQL --> GEN --> VAL --> MON --> OUT
 ```
 
 **Input:** raw complaint or approved knowledge submission.  
@@ -102,22 +94,17 @@ Streamlit and FastAPI are the UI/backend service boundary. Classification/retrie
 
 ```mermaid
 flowchart TB
-    subgraph SOURCES[Prepare source records]
-        X[Excel] --> V[Validate and separate held-out records]
-        V --> T[Training ticket records]
-        P[Text PDFs] --> EX[Extract text and pages]
-        EX --> CH[Token chunks with overlap]
-        CH --> META[Groq titles and labels]
-    end
-    T --> PASS[Prepare search passages]
-    META --> PASS
-    PASS --> EMB[Create MiniLM embeddings]
-    EMB --> DB[Write SQLite records and Qdrant vectors]
-    DB --> CHECK[Verify snapshot and activate]
-    subgraph AUX[Separate preparation outputs]
-        E[Held-out tickets: evaluation only]
-        FEW[Training-only classification examples]
-    end
+    SOURCE[Historical Excel tickets and KB PDFs]
+    READ[Read ticket rows and extract PDF text with pages]
+    SPLIT[Keep held-out tickets separate from search data]
+    CHUNK[Create token-bounded PDF chunks with overlap]
+    META[Groq labels PDF chunks with titles, categories and products]
+    RECORDS[Prepare training records, KB records and few-shot examples]
+    PASS[Create search passages from conversations and KB text]
+    EMB[Generate MiniLM embeddings]
+    STORE[Save full records in SQLite and vectors in Qdrant]
+    VERIFY[Verify matching passage IDs and activate snapshot]
+    SOURCE --> READ --> SPLIT --> CHUNK --> META --> RECORDS --> PASS --> EMB --> STORE --> VERIFY
 ```
 
 **Input:** workbook and text PDFs.  
