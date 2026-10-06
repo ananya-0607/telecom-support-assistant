@@ -81,6 +81,52 @@ def test_examples_never_accept_test_tickets():
     with pytest.raises(ValueError,match='training'):
         module.select_examples([SimpleNamespace(split='test')])
 
+
+def test_retrieval_keeps_narrow_semantic_matches_without_keyword_padding(monkeypatch):
+    import telecom_support.retrieval.service as service
+    rows = [dict(passage_id=pid, source_id=pid, source_type='ticket',
+        categories=['Slow speed'], products=['Fiber Broadband & Gateway'], text=pid)
+        for pid in ['relevant', 'keyword_only']]
+    class Vector:
+        def tolist(self): return [1.0]
+    index = SimpleNamespace(rows=rows, database='unused', client=None,
+        embedder=SimpleNamespace(encode=lambda text: [Vector()]))
+    calls = []
+    def semantic(client, vector, candidates, threshold):
+        if not candidates: return [], {}
+        calls.append([r['passage_id'] for r in candidates])
+        return ['relevant'], {'relevant': 0.46}
+    monkeypatch.setattr(service, 'semantic_search', semantic)
+    monkeypatch.setattr(service, 'keyword_search', lambda q, candidates:
+        (['keyword_only', 'relevant'], {'keyword_only': 4, 'relevant': 2}) if candidates else ([], {}))
+    monkeypatch.setattr(service, 'fetch_evidence', lambda db, pid:
+        {'passage_text': pid, 'source': {'source_id': pid}})
+    evidence, diagnostics = service.retrieve(index, 'slow', labels())
+    assert [e['passage_id'] for e in evidence] == ['relevant']
+    assert len(calls) == 1
+    assert diagnostics[0]['scope'] == 'category_product'
+    assert diagnostics[0]['keyword_hits'] == 2
+    assert diagnostics[1]['selected_sources'] == 0
+
+
+def test_keyword_only_evidence_does_not_enter_generation_context(monkeypatch):
+    import telecom_support.retrieval.service as service
+    row = dict(passage_id='p', source_id='s', source_type='kb',
+        categories=[], products=[], text='restart')
+    class Vector:
+        def tolist(self): return [1.0]
+    index = SimpleNamespace(rows=[row], database='unused', client=None,
+        embedder=SimpleNamespace(encode=lambda text: [Vector()]))
+    monkeypatch.setattr(service, 'semantic_search', lambda *args: ([], {}))
+    monkeypatch.setattr(service, 'keyword_search', lambda q, rows:
+        (['p'], {'p': 2}) if rows else ([], {}))
+    monkeypatch.setattr(service, 'fetch_evidence', lambda *args:
+        pytest.fail('Keyword-only evidence must not be fetched'))
+    evidence, diagnostics = service.retrieve(index, 'restart', labels())
+    assert evidence == []
+    assert diagnostics[1]['scope'] == 'global'
+    assert diagnostics[1]['keyword_hits'] == 1
+
 def test_pipeline_two_llm_calls(tmp_path, monkeypatch):
     import json
     import telecom_support.pipeline as pipeline
@@ -141,12 +187,15 @@ def test_interface_displays_citations(monkeypatch):
         'missing_information':[],'escalation':''}, 'sources':[{
         'citation_id':'S1','passage_text':'Check the cable.', 'source':{
             'source_type':'kb','title':'Cable checks','source_file':'manual.pdf','pages':[2]}}],
-        'retrieval':[], 'timings_seconds':{'total':1.0},'notice':'Review draft'}
+        'retrieval':[{'scope':'global','warning':'Keyword-only evidence'}],
+        'timings_seconds':{'total':1.0},'notice':'Review draft'}
     monkeypatch.setattr(httpx,'post',lambda *args,**kwargs:httpx.Response(200,json=result))
     app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py')).run()
     app.text_area[0].set_value('My internet is slow')
     app.button[0].click().run()
     assert not app.exception
+    assert not app.warning
+    assert not app.info
     assert not any('[S1]' in m.value for m in app.markdown)
     assert any('Cable checks' in expander.label for expander in app.expander)
     assert 'result' in app.session_state

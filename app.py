@@ -191,14 +191,10 @@ if 'result' in st.session_state:
     st.subheader('Classification')
     show_classification(labels)
     resolution = result['resolution']
-    if any(item.get('warning') for item in result['retrieval']):
-        st.warning('Some sources matched keywords without passing the semantic threshold. Review their relevance carefully.')
-    elif any(item['scope'] != 'category_product' for item in result['retrieval']):
-        st.info('Search was broadened beyond the initial labels to find additional evidence.')
     st.subheader('Resolution')
     st.write(resolution['summary'])
     if resolution['status'] == 'insufficient_evidence':
-        st.warning('Insufficient evidence for a supported resolution.')
+        st.write('Please provide more details or refer this complaint for specialist review.')
     for number,step in enumerate(resolution['steps'],1):
         st.markdown(f"**{number}.** {step['instruction']}")
     if resolution['missing_information']:

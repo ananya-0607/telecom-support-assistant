@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from threading import Lock
 import os
+from time import perf_counter
+from uuid import uuid4
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 from telecom_support.llm import StructuredLLM, ServiceError
@@ -11,6 +13,7 @@ from telecom_support.pipeline import ResolutionPipeline
 from telecom_support.ingestion.additions import AdditionJobs, ResolvedConversation
 from telecom_support.ingestion.pdf_labels import PDFLabels
 from telecom_support.taxonomy import TAXONOMY
+from telecom_support.monitoring import Monitoring
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -27,6 +30,7 @@ async def lifespan(app):
         app.state.lock = Lock()
         app.state.index = index
         app.state.jobs = AdditionJobs(ROOT, app.state)
+        app.state.monitoring = Monitoring(ROOT/'logs/resolution_requests.jsonl')
         yield
     finally:
         if hasattr(app.state, 'jobs'):
@@ -35,8 +39,36 @@ async def lifespan(app):
             getattr(app.state, 'index', index).close()
         if llm is not None:
             llm.close()
+        if hasattr(app.state, 'monitoring'):
+            app.state.monitoring.close()
 
 app = FastAPI(title='Telecom Support Resolution Assistant', lifespan=lifespan)
+
+@app.middleware('http')
+async def monitor_resolution(request: Request, call_next):
+    if request.method != 'POST' or request.url.path != '/resolve':
+        return await call_next(request)
+    started, request_id = perf_counter(), uuid4().hex
+    status, error_type = 500, None
+    try:
+        response = await call_next(request)
+        status = response.status_code
+        response.headers['X-Request-ID'] = request_id
+        return response
+    except Exception:
+        error_type = 'UnhandledError'
+        raise
+    finally:
+        if status >= 400 and error_type is None:
+            error_type = getattr(request.state, 'resolution_error_type', 'HTTPError')
+        result = getattr(request.state, 'resolution_metrics', {})
+        app.state.monitoring.record(request_id, status, perf_counter()-started,
+            retrieval=result.get('retrieval'), no_evidence=result.get('no_evidence', False),
+            error_type=error_type)
+
+@app.get('/metrics')
+def metrics():
+    return app.state.monitoring.snapshot()
 
 class ComplaintRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -112,15 +144,22 @@ def ingestion_status(job_id: str):
         raise HTTPException(404, 'Unknown ingestion job.') from None
 
 @app.post('/resolve')
-def resolve(request: ComplaintRequest):
+def resolve(request: ComplaintRequest, http_request: Request):
     # Local Qdrant/CPU model are shared; reject concurrent requests rather than overload.
     if not app.state.lock.acquire(blocking=False):
+        http_request.state.resolution_error_type = 'Busy'
         raise HTTPException(503,'Another request is running; retry shortly.')
     try:
-        return app.state.pipeline.resolve(request.complaint)
+        result = app.state.pipeline.resolve(request.complaint)
+        http_request.state.resolution_metrics = {
+            'retrieval':result.get('timings_seconds', {}).get('retrieval'),
+            'no_evidence':result.get('resolution', {}).get('status') == 'insufficient_evidence'}
+        return result
     except ServiceError as exc:
+        http_request.state.resolution_error_type = 'ServiceError'
         raise HTTPException(400,str(exc)) from None
     except Exception:
+        http_request.state.resolution_error_type = 'InternalError'
         raise HTTPException(500,'Resolution failed. Check the local API terminal.') from None
     finally:
         app.state.lock.release()

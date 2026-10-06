@@ -26,15 +26,20 @@ def retrieve(index, complaint, labels, threshold=0.30, per_type=3):
             by_id = {r['passage_id']:r for r in rows}
             unique, used = [], set()
             for pid in ranking:
+                # BM25 boosts ordering but cannot independently admit evidence.
+                if pid not in sem_scores:
+                    continue
                 if by_id[pid]['source_id'] not in used:
                     unique.append(pid)
                     used.add(by_id[pid]['source_id'])
-            # Weak semantic evidence triggers relaxation even if keyword candidates exist.
-            if (len(unique) >= per_type and semantic) or scope == 'global':
+            # Keep the narrowest scope with qualifying evidence; three is a cap,
+            # not a quota to fill with broader or keyword-only matches.
+            if unique or scope == 'global':
                 break
         diagnostics.append({'source_type':source_type, 'scope':scope,
             'semantic_hits':len(semantic), 'keyword_hits':len(lexical), 'threshold':threshold,
-            'warning':'Keyword-only evidence; relevance needs agent review.' if not semantic else None})
+            'selected_sources':min(len(unique), per_type),
+            'warning':None})
         for pid in unique[:per_type]:
             stored = fetch_evidence(index.database,pid)
             evidence.append({'citation_id':f'S{len(evidence)+1}', 'passage_id':pid,

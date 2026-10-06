@@ -1,346 +1,552 @@
 # Telecom Support Resolution Assistant
 
-A query-only support-agent prototype: few-shot complaint classification, metadata-scoped
-semantic/BM25 retrieval, rank fusion, and evidence-grounded resolution drafting with citations.
-Synthetic tickets and a text-based PDF knowledge base provide the evidence.
+A support-agent workspace that converts raw telecom complaints into classification, suggested resolution steps, information to ask, and supporting citations. It combines historical tickets and knowledge-base PDFs through semantic and keyword retrieval.
 
-## Architecture
+**Status:** working local prototype with tested knowledge updates, evaluations and monitoring. Docker packaging is pending. Suggested actions require agent review; production readiness is not claimed.
+
+## Contents
+
+- [Problem and scope](#problem-and-scope)
+- [Dataset](#dataset)
+- [Overall architecture](#overall-architecture)
+- [Initial preparation](#initial-preparation)
+- [Classification](#classification)
+- [Retrieval](#retrieval)
+- [Storage](#storage)
+- [Generation](#generation)
+- [New conversations](#new-conversations)
+- [New PDFs](#new-pdfs)
+- [New categories and products](#new-categories-and-products)
+- [PDF replacement](#pdf-replacement)
+- [Caching and decisions](#caching-and-decisions)
+- [Evaluation](#evaluation)
+- [Monitoring](#monitoring)
+- [Setup and execution](#setup-and-execution)
+- [Demo](#demo)
+- [Production improvements](#production-improvements)
+- [Deliverables](#deliverables)
+- [Folder structure](#folder-structure)
+
+## Problem and scope
+
+Keyword searches can miss complaints describing the same problem in different words. This assistant finds relevant evidence and drafts actions for a telecom support agent. It is a resolution workspace rather than a conversational chatbot.
 
 ```mermaid
 flowchart LR
-    UI[Streamlit complaint form] --> API[FastAPI /resolve]
-    API --> C[Groq few-shot classification]
-    C --> S[Category/product scope and fallback]
-    S --> V[MiniLM + Qdrant cosine search]
-    S --> K[SQLite passages + BM25]
-    V --> R[Reciprocal Rank Fusion]
-    K --> R
-    R --> DB[SQLite full evidence lookup]
-    DB --> G[Groq grounded generation]
-    G --> Check[Schema and citation ID validation]
-    Check --> UI
+    A[Complaint] --> B[Triage]
+    B --> C[Investigate and propose action]
+    C --> D[Apply action and verify outcome]
+    D --> E[Resolve or escalate]
 ```
 
-## Run on Windows
+**Input:** customer-reported problem.  
+**Output:** verified outcome or escalation in a real support workflow. The prototype drafts actions and stores reviewed records; it does not perform fixes or confirm customer outcomes.
 
-From the project root, with `.venv` activated:
+| Scope | Examples |
+|---|---|
+| Broadband | Drops, slow speed, outages, gateway hardware |
+| Mobile | Signal/voice, SIM activation/replacement, porting |
+| Commercial/account | Billing, plans, login/identity |
+| Field service | Installation and technician visits |
+| Extension | Agent-controlled labels; international roaming is currently registered |
+| Severity | Low, Medium, High: impact rather than tone |
+| Sentiment | Neutral, Frustrated, Angry |
+
+The benchmark covers ten original categories and four products; added classes are not evaluated by those scores. `config/taxonomy.json` contains definitions. The active snapshot's taxonomy is authoritative on restart.
+
+## Dataset
+
+| Source | Role |
+|---|---|
+| `data/processed/conversations.xlsx` | 200 synthetic tickets: 160 training/reference and 40 held-out |
+| `data/knowledge_base/*.pdf` | Text-based telecom procedures |
+| `dataset_creation/covered_evaluation_scenarios.json` | Covered test scenarios linked to training procedures |
+| `data/evaluation/rag_reference_cases.jsonl` | Source-checked reference resolutions |
+
+Tickets preserve ID, timestamp, category/product, severity/sentiment, complaint, conversation, resolution steps/summary and split. Only training tickets enter retrieval and few-shot prompts. **Conversation text**, including agent turns, is embedded; resolution fields remain generation evidence. KB **original text** is embedded, not predicted titles.
+
+Test cases are synthetic paraphrases of supported problems, four per original category. This is not an independent unseen-problem benchmark. Source-consistency checks are not human approval. Synthetic labels/procedures may be incomplete; reviewed generated additions are not independent evidence of successful fixes.
+
+## Overall architecture
+
+```mermaid
+flowchart TD
+    UI[Streamlit workspace] --> API[FastAPI backend]
+    API --> CL[Groq classification]
+    CL --> RET[Metadata-scoped retrieval]
+    RET --> Q[MiniLM and Qdrant cosine search]
+    RET --> BM[BM25 passage ranking]
+    Q --> F[RRF and semantic eligibility]
+    BM --> F
+    F --> SQL[SQLite evidence lookup]
+    SQL --> GEN[Groq grounded generation]
+    GEN --> VAL[Schema and citation-ID checks]
+    VAL --> OUT[Labels, actions, questions, citations]
+    OUT --> UI
+    UI --> ING[Knowledge ingestion jobs]
+    ING --> SQL
+    ING --> Q
+    API --> MON[Metrics and safe logs]
+```
+
+**Input:** raw complaint or approved knowledge submission.  
+**Output:** suggested resolution or completed ingestion with searchable knowledge.  
+**Files:** `app.py`, `src/telecom_support/api.py`, `pipeline.py`, `ingestion/additions.py`, `monitoring.py`.
+
+Streamlit and FastAPI are the UI/backend service boundary. Classification/retrieval/generation/ingestion are backend modules, not separately deployed microservices. Groq inference is hosted; embeddings/storage are local.
+
+## Initial preparation
+
+```mermaid
+flowchart TD
+    X[Excel] --> V[Validate and split]
+    V --> T[Training records]
+    V --> E[Held-out records kept separate]
+    P[PDFs] --> EX[Extract text/pages]
+    EX --> CH[Token chunks with overlap]
+    CH --> META[Groq titles and labels]
+    T --> PASS[Search passages]
+    META --> PASS
+    PASS --> EMB[MiniLM embeddings]
+    PASS --> DB[SQLite]
+    EMB --> Q[Qdrant]
+    DB --> CHECK[Verify snapshot and activate]
+    Q --> CHECK
+    T --> FEW[Training-only examples]
+```
+
+**Input:** workbook and text PDFs.  
+**Output:** JSONL records, examples and verified SQLite/Qdrant snapshot. Held-out tickets remain excluded.  
+**Files:** `scripts/prepare_sources.py`, `classify_kb.py`, `prepare_classification_examples.py`, `build_index.py`; `ingestion/`, `indexing/`.
+
+Chunks allow **240 tokens including special tokens**, with up to **32 tokens overlap**. MiniLM's configured sequence limit is 256. Blocks/sentences are preferred; oversized sentences can split at tokenizer offsets. Overlap is bounded, not guaranteed at every boundary. Chunks can mix procedures. OCR is not implemented. Titles/labels are predicted from chunk text rather than PDF-specific heading rules.
+
+## Classification
+
+```mermaid
+flowchart LR
+    C[Complaint] --> P[Few-shot prompt]
+    D[Taxonomy definitions] --> P
+    E[Training-only examples] --> P
+    P --> L[Groq structured output]
+    L --> V[Validate labels]
+    V --> O[Categories, products, severity, sentiment]
+```
+
+**Input:** complaint, taxonomy and training-only examples.  
+**Output:** validated category/product lists, severity and sentiment.  
+**Files:** `classification/service.py`, `classification/schemas.py`, `taxonomy.py`, `llm.py` under `src/telecom_support/`.
+
+Few-shot prompting demonstrates classification without training model weights. New classes initially use definitions rather than fabricated examples. Multi-label complaint outputs are supported; the benchmark mainly tests single-label cases. Ticket saving accepts one category/product per record.
+
+## Retrieval
+
+```mermaid
+flowchart TD
+    C[Complaint and labels] --> S[Category/product scope]
+    S --> V[MiniLM and cosine search]
+    S --> K[BM25 keyword ranking]
+    V --> R[RRF combine ranks]
+    K --> R
+    R --> G[Keep semantic-qualified passages]
+    G --> D[Deduplicate source IDs]
+    D --> O[Up to three tickets and three KB sources]
+    G --> F[If none qualify: product then global]
+    F --> V
+    F --> K
+```
+
+**Input:** complaint, labels, indexed passages and threshold.  
+**Output:** up to six evidence sources and internal diagnostics; fewer/no sources are possible.  
+**Files:** `retrieval/service.py`, `semantic.py`, `keyword.py`, `ranking.py`, `index.py`.
+
+| Concept | Behavior |
+|---|---|
+| Cosine | Vector-direction similarity, not correctness probability |
+| BM25 | Keyword relevance using rarity, repetition and document length |
+| RRF | Adds `1 / (60 + rank)` across lists; rank positions rather than raw scores |
+| Semantic gate | Default cosine threshold **0.30**; keyword-only passages do not enter generation |
+| Fallback | Search each source type separately; keep narrowest scope with qualifying evidence |
+| Source cap | Three per type is a maximum, not a quota |
+
+BM25 still contributes ordering. General KB chunks with empty label lists remain searchable in restricted scopes. The threshold is experimental and can exclude useful exact-term matches. Similarity does not prove applicability. RRF is fusion, not a cross-encoder reranker. Technical diagnostics remain in the API rather than normal UI warnings.
+
+## Storage
+
+```mermaid
+flowchart LR
+    Q[Qdrant vector and passage ID] --> P[SQLite passage text and source ID]
+    P --> S[SQLite full source JSON]
+    S --> T[Ticket conversation and resolution]
+    S --> K[KB text, pages and version]
+```
+
+**Input:** selected passage IDs.  
+**Output:** passage text and complete source records for generation/citations.  
+**Files:** `indexing/storage.py`, `indexing/vectors.py`, `retrieval/index.py`.
+
+| Store | Contents |
+|---|---|
+| SQLite `sources` | Full `record_json`, type/file/version |
+| SQLite `passages` | Text, tokens, labels and source foreign key |
+| SQLite `build_metadata` | Manifest |
+| Qdrant `support_passages` | Normalised 384-dimensional vectors; IDs match SQL passage IDs |
+
+A long ticket can have multiple passages pointing to one source. A prepared KB chunk is itself a source and normally supplies one passage. `data/indexes/search/active.json` selects a snapshot under `search/builds/`.
+
+## Generation
+
+```mermaid
+flowchart LR
+    C[Complaint and labels] --> P[Grounded prompt]
+    E[Passages and historical resolution fields] --> P
+    P --> L[Groq resolution]
+    L --> V[Schema and citation-ID checks]
+    V --> O[Summary, actions, questions and citations]
+```
+
+**Input:** complaint, labels and evidence including historical resolution steps.  
+**Output:** suggested resolution or insufficient-evidence response.  
+**Files:** `generation/service.py`, `generation/schemas.py`, `generation/validation.py`, `pipeline.py`.
+
+Normal requests use two distinct LLM calls/prompts. No-evidence cases skip generation. The prompt preserves diagnostic prerequisites and treats historical diagnoses as precedents. Validation checks IDs/structure, not full entailment. Agents review source text; omitted/blended steps remain possible.
+
+## New conversations
+
+```mermaid
+flowchart LR
+    A[Current answer] --> R[Agent reviews and approves]
+    R --> ID[Next ticket ID]
+    ID --> C[Reviewed conversation and original response]
+    C --> P[Passages and embeddings]
+    P --> B[Verify new snapshot]
+    B --> O[Activate and report completion]
+```
+
+**Input:** complaint, reused classification and approved response.  
+**Output:** stored `T-####` ticket, searchable embeddings and completed job.  
+**Files:** `app.py`, `ingestion/additions.py`, `indexing/records.py`, `indexing/storage.py`.
+
+The complaint/reviewed response form the conversation. Full original output is retained in `generated_response`; reviewed steps/summary remain standard fields. Existing/held-out IDs are reserved. Supplied labels avoid another classification call. `origin=agent_reviewed_generated` denotes review, not confirmed resolution. Feedback contamination is a known risk.
+
+## New PDFs
+
+```mermaid
+flowchart LR
+    U[Upload text PDF] --> J[Validate and create job]
+    J --> E[Extract text/pages]
+    E --> C[Chunk with overlap]
+    C --> M[Cached or new metadata]
+    M --> V[Embed locally]
+    V --> S[Verify and activate]
+    S --> D[Ready to search]
+```
+
+**Input:** text PDF up to 10 MB using existing labels.  
+**Output:** searchable chunks/metadata/vectors and completed job status.  
+**Files:** `ingestion/pdf.py`, `chunking.py`, `metadata.py`, `additions.py`, `api.py`.
+
+HTTP 202 means accepted, not indexed. Automatic UI polling shows completion/failure. New metadata calls are paced 60 seconds apart. Closing the UI does not stop backend work; graceful shutdown waits for it. Duplicate knowledge is rejected. Additions under `data/indexes/additions/` are preserved/replayed by CLI builds. Hard interruptions require recovery/resubmission.
+
+## New categories and products
+
+```mermaid
+flowchart TD
+    U[PDF and new label descriptions] --> V[Validate names]
+    V --> B{Both labels supplied?}
+    B -->|Yes| T[Stage taxonomy]
+    B -->|No| L[Suggest missing existing-list label]
+    L --> A[Agent confirms]
+    A --> T
+    T --> P[Classify and verify snapshot]
+    P --> C[Publish knowledge and taxonomy]
+    C --> Q[Future queries use new definitions]
+```
+
+**Input:** PDF and one/both labels, with descriptions for new names.  
+**Output:** published expanded taxonomy/knowledge or awaiting-confirmation/failed job.  
+**Files:** `ingestion/pdf_labels.py`, `ingestion/additions.py`, `taxonomy.py`.
+
+Both supplied labels skip suggestion. A missing label must be supported by an existing-list match and confirmed; otherwise resubmit with both. Proposed labels remain isolated until success. This is additive registration, not automatic discovery. Old chunks are not automatically relabelled. Refresh examples before evaluation after taxonomy changes.
+
+## PDF replacement
+
+```mermaid
+flowchart TD
+    S[Select document and upload revision] --> H[File hash comparison]
+    H -->|Identical| N[No rebuild]
+    H -->|Changed| C[Extract and chunk]
+    C --> X[Compare chunk text hashes]
+    X --> U[Reuse compatible metadata/vectors]
+    X --> M[Classify/embed new or changed text]
+    U --> B[Snapshot excludes selected old chunks]
+    M --> B
+    B --> V[Verify and activate; retain other sources]
+```
+
+**Input:** existing logical document ID and replacement PDF.  
+**Output:** identical-file no-op or updated snapshot with refreshed text/pages/version.  
+**Files:** `ingestion/additions.py`, `ingestion/chunking.py`, `indexing/reuse.py`.
+
+SHA-256 detects exact content, not meaning. Chunk matching spans the document, not positions. Formatting/boundary changes may require new work. Metadata reuse requires compatible taxonomy/prompt/model. Retained vectors are copied into a fresh snapshot, not patched in place. Logical document IDs stay stable, raw versions archived, other sources retained. Failures preserve the previous active snapshot; crash-safe publication needs hardening.
+
+## Caching and decisions
+
+| Reuse | Benefit | Limitation |
+|---|---|---|
+| Metadata cache | Avoid compatible repeated Groq calls | Text/prompt/model/taxonomy changes invalidate reuse |
+| Local model cache | Avoid repeated downloads | First setup downloads weights |
+| Exact-text vectors | Avoid recomputing unchanged embeddings | Copies vectors into a new store |
+| Evaluation resume | Reuse compatible successes | Changed identity starts another run |
+
+Caching reduces work, not quota guarantees. There is no general complaint-answer cache.
+
+| Decision | Reason | Tradeoff |
+|---|---|---|
+| Few-shot LLM classifier | Limited labelled data and flexible taxonomy | API dependence/variability |
+| Local MiniLM | Small CPU model, no embedding API fee | Input length/domain limits |
+| BM25 and semantic/RRF | Exact terms plus meaning | Gate may exclude keyword-only matches |
+| SQLite/embedded Qdrant | Simple local evidence/vector links | Single worker/storage ownership |
+| Verified snapshots | Avoid incomplete activation | Storage copying/retention |
+| Reviewed draft ingestion | Convenient knowledge addition | Review is not verified customer outcome |
+
+## Evaluation
+
+### Classification
+
+```mermaid
+flowchart LR
+    T[Held-out complaints and labels] --> C[Production classifier]
+    E[Training-only examples] --> C
+    C --> P[Save predictions and request health]
+    P --> M[Compare labels and compute metrics]
+```
+
+**Input:** 40 held-out synthetic complaints/labels and training-only examples.  
+**Output:** predictions, manifest, accuracy/F1 and request-health report.  
+**Files:** `scripts/evaluate_classification.py`, `evaluation/classification.py`.
+
+Run `classification-openai-gpt-oss-20b-a9a34c9b` belongs to its recorded taxonomy/prompt/examples, not added classes.
+
+| Metric | Result |
+|---|---:|
+| Category accuracy | 95.0% |
+| Product accuracy | 97.5% |
+| Severity accuracy | 90.0% |
+| Sentiment accuracy | 90.0% |
+| All fields correct | 75.0% |
+| Category macro F1 | 0.9492 |
+| Successful calls | 40/40 |
+| Average successful call time | 0.901 seconds |
+
+### RAG
+
+```mermaid
+flowchart LR
+    T[Held-out complaints] --> P[Production pipeline]
+    P --> A[Saved answers and exact evidence]
+    R[Source-checked references] --> J[Ragas and citation-support judge]
+    A --> J
+    J --> S[Scores and coverage]
+    A --> V[Local citation validity and health]
+```
+
+**Input:** selected complaints, saved answers/evidence and source-checked references.  
+**Output:** quality estimates, citation checks, scored-case counts/errors/timing.  
+**Files:** `scripts/prepare_rag_evaluation.py`, `scripts/evaluate_rag.py`, `evaluation/rag.py`, `evaluation/ragas_adapter.py`.
+
+Run `rag-evaluation-openai-gpt-oss-20b-89e988f2`, inspected 6 October 2026: all metrics completed for five cases; no reported evaluation/pipeline errors.
+
+| Metric | Meaning | Average / cases |
+|---|---|---:|
+| Context precision | Retrieved context usefulness/order | 0.7131 / 5 |
+| Context recall | Reference information coverage | 0.7667 / 5 |
+| Faithfulness | Claims supported by evidence | 0.7363 / 5 |
+| Answer relevance | Addresses complaint | 0.7847 / 5 |
+| Answer correctness | Agreement with reference meaning/facts | 0.6016 / 5 |
+| Citation support | Instructions supported by cited sources | 0.8433 / 5 |
+| Citation validity | IDs exist in evidence | 1.0000 / 5 |
+
+Request success: **5/5**; no cases without usable evidence. Average end-to-end time: **2.345 seconds**; reported 95th percentile: **2.849 seconds**. Five cases cannot establish stable population percentiles/general quality.
+
+Scores are preliminary LLM judgments, not human approval. Correctness/faithfulness expose gaps. Citation validity alone does not prove sound actions. Meaning is judged rather than exact wording; shared model/provider can introduce correlated errors. Evaluation embeddings pool bounded long-text parts; the judge receives full text. Failed/undefined scores remain null with coverage exposed. Timing excludes startup, pacing and judges.
+
+Latest tests: **70 passed**, five dependency deprecation warnings. Fixtures/simulated LLM calls cover contracts, holdout exclusion, retrieval, citations, storage links, ingestion, taxonomy, replacement/reuse and monitoring. Manual checks covered broadband/mobile/billing/account answers and all update flows; these are functional checks, not independent expert quality approval.
+
+Stop API/UI before evaluation to release embedded Qdrant's storage lock:
 
 ```powershell
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-evaluation.txt
 python scripts/prepare_classification_examples.py
-python -m pytest tests -q
+python scripts/prepare_rag_evaluation.py
+python scripts/evaluate_classification.py --delay 60
+python scripts/evaluate_rag.py --stage answers --limit 5 --delay 60
+python scripts/evaluate_rag.py --stage scores --limit 5 --delay 60
+python scripts/evaluate_rag.py --stage report --limit 5
+```
+
+Several paced calls may be needed per metric. Delay does not guarantee quota availability. Compatible successes resume; failures save progress and stop. Code/index/taxonomy/examples/reference changes can create new runs. Reference preparation refuses silent overwrites of changed tickets: review deliberate changes first. `--allow-draft` means exploratory scoring, not approval. Generated reports under `data/indexes/evaluations/` are ignored; these tables preserve the results snapshot.
+
+## Monitoring
+
+```mermaid
+flowchart LR
+    R[POST resolve request] --> P[Start and request ID]
+    P --> A[Execute or reject]
+    A --> M[Status counts and duration]
+    A --> T[Available retrieval timing]
+    M --> E[GET metrics]
+    T --> E
+    M --> L[Safe rotating JSON logs]
+```
+
+**Input:** resolve requests, status and available timings.  
+**Output:** counters/averages, `X-Request-ID` header and logs.  
+**Files:** `monitoring.py`, `api.py`, `tests/test_monitoring.py`.
+
+`/health` is basic readiness, not active dependency probing. `/metrics` includes success/failure/no-evidence/status counts and average response/retrieval time. Response timing includes failures; retrieval averages cover completed pipelines with timing, with sample counts exposed. Insufficient evidence may be HTTP success. Counters reset on restart. Logs exclude complaints, output, exception messages and keys; files rotate at approximately 1 MB with three backups. Ingestion metrics, durable aggregation and automatic alerts are not implemented.
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/metrics
+Get-Content logs/resolution_requests.jsonl -Tail 5
+```
+
+## Setup and execution
+
+Python 3.12 was verified. Groq key/model access is required; hosted calls/first-time model downloads need network access. Never commit secrets. From the repository root:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+```
+
+Skip copying if `.env` exists. Set `GROQ_API_KEY` privately; model defaults to `openai/gpt-oss-20b`. Process variables take precedence; restart after key changes. `SEMANTIC_THRESHOLD` is a process variable, default 0.30.
+
+Fresh checkouts must generate ignored indexes:
+
+```powershell
+python scripts/prepare_sources.py
+python scripts/classify_kb.py --delay 60
+python scripts/prepare_classification_examples.py
+python scripts/build_index.py
+python scripts/check_llm.py
+```
+
+Preparation makes no LLM calls; metadata classification calls Groq for uncached chunks; indexing embeds locally; smoke check makes one request. Existing working installations need not rebuild. Back up additions with snapshots.
+
+Terminal 1:
+
+```powershell
 python -m uvicorn telecom_support.api:app --app-dir src --host 127.0.0.1 --port 8000
 ```
 
-The API requires an existing active index from `scripts/build_index.py`, enriched KB
-records from `scripts/classify_kb.py`, and a local `.env` containing `GROQ_API_KEY`
-and optionally `GROQ_MODEL` (default `openai/gpt-oss-20b`). Do not commit `.env`.
-Restart the API after changing the active build, examples, or taxonomy.
-
-In a second terminal, activate the same environment and run:
+Terminal 2, same environment:
 
 ```powershell
 python -m streamlit run app.py --server.address 127.0.0.1
 ```
 
-Open http://localhost:8501. API readiness: http://127.0.0.1:8000/health.
-Interactive API documentation: http://127.0.0.1:8000/docs.
-Ctrl+C stops each service. Use one API worker; embedded Qdrant owns its local storage lock.
+Open `http://localhost:8501`; API docs: `http://127.0.0.1:8000/docs`. Use **one worker**. Models/clients load once at startup. Ctrl+C stops each service; graceful shutdown waits for ingestion. Stop backend before CLI indexing/evaluation. For full tests install optional evaluation dependencies, then `python -m pytest tests -q`.
 
-## Behavior and limits
+| Endpoint | Input | Output |
+|---|---|---|
+| `POST /resolve` | JSON with only `complaint` | Labels, resolution, sources, diagnostics, timings |
+| `GET /health` | None | Readiness |
+| `GET /metrics` | None | Counters/averages |
+| `GET /taxonomy` | None | Definitions |
+| `POST /ingestion/conversations` | Reviewed record JSON | Accepted job |
+| `POST /ingestion/pdfs` | Binary PDF and label/replacement parameters | Accepted job |
+| `GET /ingestion/documents` | None | Document choices |
+| `GET /ingestion/jobs/{job_id}` | Job ID | Progress/result |
+| `POST /ingestion/jobs/{job_id}/confirm-labels` | Paused job ID | Continue ingestion |
 
-- Classification examples are selected only from training tickets; evaluation tickets
-  are excluded. The prototype is scoped to ten telecom support categories and four products.
-  Severity uses Low/Medium/High and sentiment uses Neutral/Frustrated/Angry.
-  Examples demonstrate single-label categories; multiple labels are instructed but not yet evaluated.
-- Semantic and lexical search run independently in the same metadata scope for tickets
-  and KB. General KB records with both label lists empty remain searchable.
-- Scope broadens from category/product to product-only to global when fewer than three
-  distinct sources are available or no semantic candidates pass the threshold.
-- `SEMANTIC_THRESHOLD` is a process environment variable (default 0.30). It is experimental,
-  not calibrated confidence. Cosine threshold does not apply to BM25. Keyword-only evidence
-  can still be returned and is flagged in search diagnostics.
-- Fusion combines rankings; a cross-encoder reranker is not implemented yet.
-- Each normal resolution makes two Groq calls. If no evidence exists, generation is skipped.
-  No automatic retry occurs. A 429 reports retry-after when available. Check free-tier quota
-  before repeated demos. Selecting examples, embedding and local tests make no Groq calls.
-- Each step must cite an evidence ID. Validation checks IDs and structure, not whether every
-  claim is entailed by a passage. Agents must review the draft. UI exposes exact retrieved text.
-- Complaints exceeding MiniLM's input limit are rejected with a shortening instruction.
-- Embeddings use historical conversation text, which includes agent fixes, and original KB text.
-- This is a local prototype: no authentication, cross-encoder, Docker deployment or production
-  monitoring yet. PDF replacement reuses unchanged vectors in fresh snapshots; label registration
-  is agent-controlled rather than automatic class discovery. RAG evaluation tooling requires reviewed
-  references and live results before quality claims can be made.
-  Bind to localhost; do not expose publicly without completing those controls.
-- Generated records, model caches, databases and examples are under ignored `data/indexes/`.
-  The SQLite `sources.record_json` column holds full records. Qdrant point IDs match SQL passage IDs.
+Example request:
 
-## Tests
-
-`python -m pytest tests -q` uses temporary records and simulated LLM calls; it verifies
-contracts, holdout exclusion, source links, scope fallback, ranking, and citation IDs.
-Live model prediction quality is a separate evaluation milestone.
-
-## Classification evaluation
-
-The evaluator reuses the production classifier and training-only examples; it does not
-change prompts or run retrieval/generation. Start with a small mechanics check:
-
-```powershell
-python scripts/evaluate_classification.py --limit 5 --delay 30
+```json
+{"complaint": "My broadband drops every evening and restarting the router has not helped."}
 ```
 
-Then evaluate all held-out tickets, reusing saved successful predictions:
+Output keys: `classification`, `resolution` (summary, cited steps, missing information, escalation), `sources`, `retrieval`, `timings_seconds`. Extra fields are rejected. A 6,000-character HTTP limit plus embedding token limit applies. Input validation uses 422, busy processing 503, handled service errors currently 400, unexpected failures 500. Provider-status mapping/unrelated-question handling need improvement.
 
-```powershell
-python scripts/evaluate_classification.py --delay 30
+### Docker status
+
+**Pending:** packaging/commands have not been implemented or verified. Intended deployment separates UI/backend and persists indexes/additions/logs with environment-provided secrets. Update this section with tested instructions before marking it complete.
+
+## Demo
+
+1. Start services; check `/health`.
+2. Submit a broadband complaint and review steps/citations.
+3. Try: “My phone's 4G internet works normally, but incoming calls go straight to voicemail and outgoing calls fail immediately. What should I do?” Check applicable voice-provisioning evidence; wording varies.
+4. Review/save a single-category answer and note its ticket ID.
+5. Upload a short text PDF, wait for completion and query covered content.
+6. Replace it; verify changed content and other retained sources.
+7. Show new-label registration/confirmation.
+8. Inspect `/metrics` and evaluation results with sample counts.
+
+Use only synthetic/public or approved data for hosted processing. Suggested actions are not executed fixes.
+
+## Production improvements
+
+| Current implementation | Future production improvement |
+|---|---|
+| Single-worker local backend | External Qdrant/database, stateless API scaling |
+| In-process ingestion | Durable queue/workers and idempotent recovery |
+| Local administration | Authentication, upload permissions and audit trails |
+| No automatic provider retry | Bounded backoff, timeouts and circuit breakers |
+| Process-local monitoring | Durable dashboards, alerts and privacy-aware tracing |
+| Text PDFs | OCR/layout parsing and procedure review |
+| RRF/experimental gate | Threshold tests, reranking and procedure-specific selection |
+| Synthetic benchmark | Independent expert cases and judge calibration |
+| Reviewed drafts | Verified outcome tracking to prevent error reinforcement |
+| Additive labels | Versioned migration/relabeling and reviewed class discovery |
+| Retained snapshots | Backup/restore, retention and crash-safe publication |
+
+Implemented exploration: controlled taxonomy extension, PDF replacement, metadata caching, vector reuse, verified activation and evaluation resume. Automatic clustering/cross-encoder reranking/general answer caching remain future scope. Keep services local until security controls exist.
+
+## Deliverables
+
+| Requirement/rubric area | Evidence/status |
+|---|---|
+| Problem understanding | Scope, ticket lifecycle, dataset limitations |
+| Architecture | Overall/component/update diagrams with inputs/outputs |
+| Executable GitHub code | Source/setup provided; final push and clean-checkout verification required |
+| Semantic retrieval/RAG | Working UI/API, MiniLM/Qdrant, BM25/RRF and citations |
+| Evolving data/classes | Ticket/PDF additions, replacement and controlled taxonomy |
+| Additional exploration | Hash reuse, staged labels and snapshots |
+| Evals/system health | Results, 70 tests, manual checks and metrics/logs |
+| Design/production scale | Tradeoffs and future deployment considerations |
+| Docker packaging | Pending implementation/verification |
+
+## Folder structure
+
+```text
+app.py                         Streamlit UI
+config/taxonomy.json            Label definitions
+requirements.txt               Application dependencies
+requirements-evaluation.txt    Optional evaluation dependencies
+.env.example                   Private-key/model template
+scripts/                       Preparation, indexing and evaluation commands
+src/telecom_support/
+  api.py                       Endpoints and lifecycle
+  pipeline.py                  Request orchestration
+  llm.py                       Structured Groq client
+  taxonomy.py                  Dynamic registry
+  monitoring.py                Counters and safe logs
+  classification/              Prompts and schemas
+  ingestion/                   Excel/PDF preparation and update jobs
+  indexing/                    Embeddings, SQLite, Qdrant and reuse
+  retrieval/                   Semantic/BM25 search and fusion
+  generation/                  Grounded output and citation validation
+  evaluation/                  Metrics, adapters and reports
+tests/                         Offline behavior/contract checks
+dataset_creation/              Synthetic generation and scenarios
+data/processed/                Workbook and mapping
+data/knowledge_base/           Source PDFs
+data/evaluation/               RAG references
+data/indexes/                  Generated records/caches/additions/builds/reports (ignored)
+logs/                          Operational logs (ignored)
 ```
 
-Each uncached ticket uses one Groq request. Telecom categories are round-robin ordered
-for useful small samples. On a provider failure the
-run stops after saving the failure and prior successes; rerun later to retry unfinished
-tickets. Thirty seconds is pacing, not a guarantee against token/day limits. Avoid running
-interactive Groq queries concurrently during the evaluation.
-
-Outputs are under `data/indexes/evaluations/classification/classification-<model>-<version>/`:
-`manifest.json` records model/prompt/examples/taxonomy/data identity; `predictions.jsonl`
-records attempts and reference/predicted labels; `report.json` records metrics and mistakes.
-Changed inputs automatically create a different run directory. The report is overwritten
-for the requested selection; removing `--limit` expands its scope. Saved attempts remain.
-
-Metrics: exact-match accuracy for category/product, severity/sentiment accuracy,
-category macro F1, all-fields accuracy, request counts/success
-rate, and average successful-call latency. Failed calls are excluded from label metrics but explicitly
-included in request health and selected-ticket coverage. Values are fractions (0–1);
-null means no denominator. These are agreements with synthetic reference labels, not
-proof of real-world correctness. With only four held-out cases per category, results
-are preliminary. A five-case check is not a final benchmark.
-
-To recalculate a full report from saved results without sending API requests:
-
-```powershell
-python scripts/evaluate_classification.py --report-only
-```
-
-Dataset revision `telecom-only-evaluation-v1` replaces the 20 unrelated held-out cases
-with two additional synthetic telecom cases per category. All 160 reference tickets and
-the other 20 evaluation tickets are retained: 200 tickets total, 40 held out, four per category.
-Replacement text and labels are recorded in `dataset_creation/telecom_evaluation_replacements.json`.
-The three workbooks and affected source notes/counts are kept consistent. The old five-case
-report is a historical baseline for a different scope; its scores must not be compared
-directly with this revised dataset. Existing severity/sentiment disagreements are not
-resolved by removing out-of-scope cases. Label review remains necessary.
-
-Current revision `covered-telecom-problems-v2` supersedes those test rows. All 40 held-out
-complaints are synthetic paraphrases of problems supported by specified training-ticket
-procedures, with four cases per category. They are not an independent unseen-problem
-benchmark. Training complaints and procedures remain unchanged; Critical maps to High,
-clear historical anger maps to Angry, other expressed dissatisfaction/distress maps to
-Frustrated, and factual uncertainty or urgency maps to Neutral. Test complaints explicitly
-express their intended tone; the former positive examples now express strong anger.
-Labels describe tone separately from fault severity. The scenario specification and source
-links are in `dataset_creation/covered_evaluation_scenarios.json`. All prior evaluation
-outputs were archived outside the repository. Temporary migration artifacts and obsolete
-snapshots are also outside the project; active data and current evaluation reports are retained.
-New results must be generated; old scores are not comparable with this revised benchmark.
-
-## RAG quality evaluation
-
-The optional evaluator uses Ragas 0.2.15's ContextPrecision, ContextRecall, Faithfulness,
-AnswerRelevancy and AnswerCorrectness. These judge semantic meaning, not identical wording.
-Citation validity is a local ID check; citation support is a separate per-step Groq judgment
-against only the cited evidence. No combined quality score is invented.
-
-Install the optional dependencies (the application does not require Ragas):
-
-```powershell
-python -m pip install --no-cache-dir -r requirements-evaluation.txt
-python scripts/prepare_rag_evaluation.py
-```
-
-`data/evaluation/rag_reference_cases.jsonl` is a committed, editable reference dataset,
-separate from the retrieval index and few-shot examples. Each row contains a complaint,
-reference resolution, original ticket version, review status and notes. References initially
-copy Excel resolution steps and summaries with `review_status: "draft"`. Check whether
-steps rely on later-discovered facts; edit the reference to reflect appropriate diagnostic
-actions and accepted alternatives. Only then set that row to `"reviewed"`. Re-preparation
-preserves existing references, and refuses to silently overwrite changed underlying tickets.
-For the covered-problem revision, preparation validates each declared training source and
-checks that its procedure is included in the reference steps. These cases use
-`review_status: "source_checked"` and omit historical final-outcome summaries from the
-expected answer. This denotes a source-consistency check, not human approval. Corrective
-actions remain conditional on confirming the relevant condition and authorisation.
-They can be evaluated without `--allow-draft`; the report still discloses their synthetic scope.
-
-For a one-case exploratory mechanics check with unreviewed references:
-
-```powershell
-python scripts/evaluate_rag.py --stage answers --limit 1 --delay 30 --allow-draft
-python scripts/evaluate_rag.py --stage scores --limit 1 --delay 30 --allow-draft
-```
-
-Stop the backend first with Ctrl+C in its terminal: local Qdrant storage cannot be opened
-by the evaluator and API process simultaneously. No running interface is needed.
-The answers stage runs the actual classification/retrieval/generation pipeline. The scores
-stage reuses saved answers and calls the Groq judge through Ragas. All generation/judge
-requests, including internal subrequests, are serialized and spaced by the delay. Scoring
-may take substantially longer than answer generation. Each successful metric is saved,
-then reused when the same command is rerun. Provider failures stop the run; no automatic
-provider retry is configured. Ragas may issue paced output-repair requests for malformed JSON.
-There is no OpenAI API or hosted embedding call: embeddings use the existing local MiniLM.
-Ragas telemetry and LangSmith tracing are disabled by the entry script.
-
-After reviewing references, omit `--allow-draft`; omit `--limit` for all references:
-
-```powershell
-python scripts/evaluate_rag.py --stage answers --delay 30
-python scripts/evaluate_rag.py --stage scores --delay 30
-python scripts/evaluate_rag.py --stage report
-```
-
-Readable folders under `data/indexes/evaluations/rag/rag-evaluation-<model>-<version>/`
-contain `manifest.json`, `assistant_answers.jsonl`, `rag_metric_scores.jsonl` and `report.json`.
-Changing references, index, examples, models, threshold or evaluator code creates a separate
-compatible run. A short version suffix disambiguates runs; it is not a metric or ranking.
-The report uses descriptive metric names, score coverage, error lists, average and 95th
-percentile latency, and pipeline request success rate. Pipeline latency excludes startup,
-intentional request delays and judging time. The raw pipeline timing breakdown includes
-the evaluation pacer's wait; use the evaluator's `latency_seconds` for runtime comparisons.
-
-Context precision judges ranked evidence usefulness against the reference. Context recall
-checks coverage of reference statements. Faithfulness checks answer claims against the exact
-evidence fields provided to generation, including historical resolution steps. Answer relevance
-uses reconstructed questions and local embedding similarity. Answer correctness combines
-statement-level agreement with reference/answer embedding similarity using Ragas defaults.
-Embedding-dependent scores use MiniLM. The evaluation adapter splits long text into
-bounded nonoverlapping parts, computes a token-count-weighted average of their vectors,
-and normalizes the result. Short-text embeddings retain their existing behavior. The
-LLM judge receives the complete answer/reference, and retrieval embedding limits remain
-unchanged. Pooling is an explicit local embedding configuration, not a replacement for
-Ragas metric formulas or a guarantee of semantic accuracy. These
-are model-dependent estimates; inspect examples and judge disagreement rather than claiming
-human-verified quality. References from synthetic Excel data may be incomplete or ambiguous.
-Empty-evidence precision/recall/faithfulness and step-less citation scores are marked undefined,
-with insufficient-evidence cases counted separately. Missing/failed scores are never silently
-converted to zero or excluded without exposing scored-case counts.
-# Adding new knowledge through the interface
-
-## Replacing an existing PDF
-
-Choose **Add knowledge → New PDF → Replace existing PDF**, select an indexed document,
-then upload its updated version. Logical `document_id` is preserved across versions;
-each version's uploaded bytes remain archived under its ingestion job. The raw original
-PDF is not overwritten. The selector uses filenames (or titles for older uploads).
-
-An identical file hash is a no-op. Otherwise extraction/chunking runs again and SHA-256
-content hashes compare chunks across the selected document, not by chunk number. New
-chunks persist `content_hash` in SQLite's record JSON. Unchanged text reuses compatible
-metadata (same taxonomy, prompt and LLM model) and existing MiniLM vectors. Changed/new
-passage texts are embedded; their metadata is classified as needed. Text matching is
-exact, so line-wrap/whitespace or boundary changes can require new work. Page numbers,
-version and source references are refreshed even for unchanged text.
-
-Only the selected document's old chunks are omitted from the new active snapshot. All
-other documents/tickets remain. SQLite and Qdrant are written to a fresh verified
-snapshot, reusing persisted vectors by exact text and compatible embedding model.
-This saves embedding computation but still copies retained vectors into the new store;
-it is not an in-place Qdrant patch. The previous snapshot remains available on failure.
-Old snapshots remain on disk for recovery and are not queried by the active backend.
-
-The API lists documents through `GET /ingestion/documents`. Replacement uses the existing
-binary PDF endpoint with query parameters `replacement_id=<document_id>` and `filename`.
-Job results record `unchanged_chunks`, `changed_or_new_chunks`, `removed_chunks`,
-`embedded_unique_texts` and `reused_passages`. Removed chunks count old texts no longer
-present, including old versions of edited text. Completed jobs replay in creation order
-on command-line rebuilds, so prepared originals cannot silently replace newer versions.
-Replacing a PDF uses the current taxonomy; register new labels with a separate upload.
-
-## PDFs introducing a new category or product
-
-Under **Add knowledge → New PDF**, choose **Existing categories** for the standard
-upload, or **New category or product** to extend the label registry. Supply a category,
-product, or both. A new name requires a short description. Names are checked against
-existing labels without case sensitivity; existing definitions are never overwritten.
-
-If one label is blank, Groq suggests a directly supported match from the existing list
-using bounded PDF excerpts. The page pauses for **Confirm labels and process PDF**.
-If no match is supported, it asks you to upload again with both labels; it never invents
-the missing label. Supplying both labels skips this suggestion call.
-
-The proposed registry is isolated inside the ingestion job. PDF metadata classification
-uses that expanded vocabulary, without forcing every chunk into the new category.
-Embedding and SQL/Qdrant verification then run as usual. Only a successful snapshot
-publishes the extended registry and increments its version. Future complaints use the
-new schema and descriptions immediately; there is no restart after successful upload.
-New classes initially use their descriptions rather than invented few-shot examples.
-Existing training-only examples remain valid for the original classes.
-
-`config/taxonomy.json` is updated on successful registration. The active snapshot also
-contains its taxonomy, which is authoritative on restart. Do not manually edit the JSON
-to override a published taxonomy. This workflow is additive; renaming, deletion and
-automatic emerging-class discovery are not implemented. Old chunks retain their prior
-labels; the new PDF is classified with the expanded vocabulary. Metadata caches are
-partitioned by taxonomy to isolate unsuccessful proposals.
-
-The backend accepts PDF label fields as query parameters on `POST /ingestion/pdfs`:
-`new_labels=true`, `category`, `category_description`, `product`, `product_description`.
-`GET /taxonomy` returns the current registry. A paused upload is confirmed through
-`POST /ingestion/jobs/{job_id}/confirm-labels`. The API lock prevents resolution queries
-from running during taxonomy activation; durable publication uses the snapshot pointer.
-
-After changing the registry, run `python scripts/prepare_classification_examples.py`
-before a new evaluation run so the evaluation manifest records the current vocabulary.
-Keep original held-out cases independent; uploaded PDFs do not provide new evaluation
-ground truth. Previous evaluation reports belong to the earlier taxonomy/index versions.
-
-Start the existing FastAPI backend and Streamlit interface, then select **Add knowledge**
-in the sidebar. The backend must run as one process/worker because local Qdrant and the
-ingestion lock are shared. This is a local prototype administration page; authentication
-and role-based upload permissions are required before exposing it publicly.
-
-- **Current generated conversation:** first get an answer on Resolve complaint, then
-  open Add knowledge. The complaint, steps, summary and classification are reused;
-  review/edit the steps and approve them before saving. Customer complaint and approved
-  agent response form the conversation automatically. No second classification call
-  is made. Saved records carry `origin=agent_reviewed_generated`; this means an approved
-  AI draft, not proof that a customer's fault was actually resolved. Such additions
-  enter retrieval and must be tracked separately from independent evaluation evidence.
-  IDs continue the existing `T-####` sequence (e.g. `T-0201`, `T-0202`), reserving
-  held-out evaluation IDs too, and are shown on completed jobs. The full original API
-  response is retained in SQLite's `sources.record_json.generated_response`, including
-  structured steps/citations, missing information, escalation and supporting sources.
-  Reviewed text is stored in the usual conversation/resolution fields as well.
-  The current historical schema accepts one category and one product per record; submit
-  separate resolved issues if the classifier finds multiple issues. Only conversation
-  text is embedded; resolution fields are stored as evidence in SQLite.
-- **New PDF:** upload a text PDF (maximum 10 MB). Existing extraction and 240-token /
-  32-token-overlap chunking are reused, followed by the existing title/category/product
-  prompt. New metadata requests are spaced 60 seconds apart. Scanned PDFs need OCR,
-  which is not implemented. Use Replace existing PDF to update an indexed document.
-- Processing progress refreshes automatically in the interface; job IDs/build details
-  are hidden from the main page. **Done — your knowledge is saved and ready to search** means SQLite and
-  Qdrant have been written/checked and the backend has switched to the new index.
-  There is no backend restart after a successful addition. Closing the interface does
-  not stop a backend job. Graceful backend shutdown waits for its current job.
-
-The API exposes `POST /ingestion/conversations` (JSON), `POST /ingestion/pdfs`
-(`application/pdf` binary body), and `GET /ingestion/jobs/{job_id}`. Submission returns
-HTTP 202, not confirmation of completed indexing. Only one ingestion/search runs at a
-time; another submission or resolution receives HTTP 503 while processing is busy.
-
-Sources, statuses and validated addition records are retained under the ignored
-`data/indexes/additions/<job_id>/` directory. Each addition builds a full new snapshot
-from the current active SQLite evidence plus the new records. Existing MiniLM weights
-are reused in memory. The old snapshot stays active if preparation or vector writing
-fails. Completed addition records are also included by `scripts/build_index.py`, so a
-later command-line rebuild does not silently drop them. Do not delete the additions
-directory to clear evaluation results. Back up it along with search snapshots.
-
-Duplicate PDF content and duplicate conversation text are rejected. Metadata cache
-successes survive failed PDF jobs; resubmit the same PDF to reuse them. A hard process
-termination can interrupt work; startup marks unfinished jobs interrupted. Crash-safe
-multi-file publication and automatic recovery after a crash during activation remain
-production hardening work. Review submitted procedures: ingestion does not verify
-technical correctness or provider policy. Add only synthetic/public or approved data
-for Groq processing.
+Secrets, environments, indexes and logs are excluded by `.gitignore`. This README is the single documentation entry point.
