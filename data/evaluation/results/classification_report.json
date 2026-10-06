@@ -1,0 +1,327 @@
+{
+  "selected_tickets": 40,
+  "completed_tickets": 40,
+  "remaining_ticket_ids": [],
+  "quality_on_valid_predictions": {
+    "overall": {
+      "valid_predictions": 40,
+      "field_accuracy": {
+        "categories": 0.95,
+        "products": 0.975,
+        "severity": 0.9,
+        "sentiment": 0.9
+      },
+      "all_fields_accuracy": 0.75,
+      "category_macro_f1": {
+        "value": 0.9492063492063492,
+        "labels_included": [
+          "Account / login / KYC",
+          "Billing dispute",
+          "Broadband intermittent drops",
+          "Installation / technician visit",
+          "Mobile signal",
+          "No connectivity / outage",
+          "Plan change",
+          "Router / modem hardware",
+          "SIM / activation / porting",
+          "Slow speed"
+        ]
+      }
+    }
+  },
+  "request_health": {
+    "attempts": 40,
+    "successes": 40,
+    "failures": 0,
+    "success_rate": 1.0,
+    "average_success_latency_seconds": 0.90121
+  },
+  "successful_and_all_fields_correct_fraction_of_selected": 0.75,
+  "incorrect_cases": [
+    {
+      "ticket_id": "T-0001",
+      "complaint": "Our fibre gateway restarts at the same time every afternoon. Its settings show an automatic reboot schedule that we did not intend to enable. I am frustrated with this situation.",
+      "expected": {
+        "categories": [
+          "Broadband intermittent drops"
+        ],
+        "products": [
+          "Fiber Broadband & Gateway"
+        ],
+        "severity": "Medium",
+        "sentiment": "Frustrated"
+      },
+      "prediction": {
+        "categories": [
+          "Router / modem hardware"
+        ],
+        "products": [
+          "Fiber Broadband & Gateway"
+        ],
+        "severity": "Medium",
+        "sentiment": "Frustrated"
+      },
+      "incorrect_fields": [
+        "categories"
+      ]
+    },
+    {
+      "ticket_id": "T-0050",
+      "complaint": "We need broadband for a second business location with its own invoice. This is a separate service request, not an upgrade to the existing branch connection. I am frustrated with this situation.",
+      "expected": {
+        "categories": [
+          "Plan change"
+        ],
+        "products": [
+          "Fiber Broadband & Gateway"
+        ],
+        "severity": "Low",
+        "sentiment": "Frustrated"
+      },
+      "prediction": {
+        "categories": [
+          "Installation / technician visit"
+        ],
+        "products": [
+          "Fiber Broadband & Gateway",
+          "Home Installation / Technical Visit"
+        ],
+        "severity": "Low",
+        "sentiment": "Frustrated"
+      },
+      "incorrect_fields": [
+        "categories",
+        "products"
+      ]
+    },
+    {
+      "ticket_id": "T-0080",
+      "complaint": "The apartment fibre installation needs written building-association permission for the proposed cable route. That approval has not been obtained yet. I am frustrated with this situation.",
+      "expected": {
+        "categories": [
+          "Installation / technician visit"
+        ],
+        "products": [
+          "Home Installation / Technical Visit"
+        ],
+        "severity": "Low",
+        "sentiment": "Frustrated"
+      },
+      "prediction": {
+        "categories": [
+          "Installation / technician visit"
+        ],
+        "products": [
+          "Home Installation / Technical Visit"
+        ],
+        "severity": "Medium",
+        "sentiment": "Frustrated"
+      },
+      "incorrect_fields": [
+        "severity"
+      ]
+    },
+    {
+      "ticket_id": "T-0092",
+      "complaint": "Only the guest wireless network has very low throughput; staff access is normal. Please investigate the guest-network bandwidth cap.",
+      "expected": {
+        "categories": [
+          "Slow speed"
+        ],
+        "products": [
+          "Fiber Broadband & Gateway"
+        ],
+        "severity": "Medium",
+        "sentiment": "Neutral"
+      },
+      "prediction": {
+        "categories": [
+          "Slow speed"
+        ],
+        "products": [
+          "Fiber Broadband & Gateway"
+        ],
+        "severity": "Medium",
+        "sentiment": "Frustrated"
+      },
+      "incorrect_fields": [
+        "sentiment"
+      ]
+    },
+    {
+      "ticket_id": "T-0094",
+      "complaint": "Our fibre router was exposed to leaking water and is no longer in use. We need a safe authorised equipment assessment rather than advice to dry or open it.",
+      "expected": {
+        "categories": [
+          "Router / modem hardware"
+        ],
+        "products": [
+          "Fiber Broadband & Gateway"
+        ],
+        "severity": "High",
+        "sentiment": "Neutral"
+      },
+      "prediction": {
+        "categories": [
+          "Router / modem hardware"
+        ],
+        "products": [
+          "Fiber Broadband & Gateway"
+        ],
+        "severity": "High",
+        "sentiment": "Frustrated"
+      },
+      "incorrect_fields": [
+        "sentiment"
+      ]
+    },
+    {
+      "ticket_id": "T-0095",
+      "complaint": "The billing portal shows two completed debits against one telecom invoice. Please review the duplicate payment and the remaining account balance.",
+      "expected": {
+        "categories": [
+          "Billing dispute"
+        ],
+        "products": [
+          "Billing & Account Portal"
+        ],
+        "severity": "Medium",
+        "sentiment": "Neutral"
+      },
+      "prediction": {
+        "categories": [
+          "Billing dispute"
+        ],
+        "products": [
+          "Billing & Account Portal"
+        ],
+        "severity": "Low",
+        "sentiment": "Neutral"
+      },
+      "incorrect_fields": [
+        "severity"
+      ]
+    },
+    {
+      "ticket_id": "T-0097",
+      "complaint": "The mobile signal is poor around one sector following antenna maintenance. Multiple supported phones reproduce it in that area only.",
+      "expected": {
+        "categories": [
+          "Mobile signal"
+        ],
+        "products": [
+          "Mobile Postpaid / SIM"
+        ],
+        "severity": "Medium",
+        "sentiment": "Neutral"
+      },
+      "prediction": {
+        "categories": [
+          "Mobile signal"
+        ],
+        "products": [
+          "Mobile Postpaid / SIM"
+        ],
+        "severity": "Medium",
+        "sentiment": "Frustrated"
+      },
+      "incorrect_fields": [
+        "sentiment"
+      ]
+    },
+    {
+      "ticket_id": "T-0100",
+      "complaint": "I cannot complete telecom account sign-in. Password entry succeeds, but MFA fails while my phone time is wrong. Please explain the approved recovery checks.",
+      "expected": {
+        "categories": [
+          "Account / login / KYC"
+        ],
+        "products": [
+          "Billing & Account Portal"
+        ],
+        "severity": "Medium",
+        "sentiment": "Neutral"
+      },
+      "prediction": {
+        "categories": [
+          "Account / login / KYC"
+        ],
+        "products": [
+          "Billing & Account Portal"
+        ],
+        "severity": "Medium",
+        "sentiment": "Frustrated"
+      },
+      "incorrect_fields": [
+        "sentiment"
+      ]
+    },
+    {
+      "ticket_id": "T-0181",
+      "complaint": "Our building has protected frontage. The fibre entry route needs an authorised permissions assessment before anyone drills or schedules the work. I am angry about this situation and want it addressed.",
+      "expected": {
+        "categories": [
+          "Installation / technician visit"
+        ],
+        "products": [
+          "Home Installation / Technical Visit"
+        ],
+        "severity": "Low",
+        "sentiment": "Angry"
+      },
+      "prediction": {
+        "categories": [
+          "Installation / technician visit"
+        ],
+        "products": [
+          "Home Installation / Technical Visit"
+        ],
+        "severity": "Medium",
+        "sentiment": "Angry"
+      },
+      "incorrect_fields": [
+        "severity"
+      ]
+    },
+    {
+      "ticket_id": "T-0198",
+      "complaint": "The eSIM is valid but will not register because this phone has an original-carrier lock. I need the legitimate eligibility process to restore mobile service. I am frustrated with this situation.",
+      "expected": {
+        "categories": [
+          "SIM / activation / porting"
+        ],
+        "products": [
+          "Mobile Postpaid / SIM"
+        ],
+        "severity": "High",
+        "sentiment": "Frustrated"
+      },
+      "prediction": {
+        "categories": [
+          "SIM / activation / porting"
+        ],
+        "products": [
+          "Mobile Postpaid / SIM"
+        ],
+        "severity": "Medium",
+        "sentiment": "Frustrated"
+      },
+      "incorrect_fields": [
+        "severity"
+      ]
+    }
+  ],
+  "failed_attempts": [],
+  "notes": [
+    "Accuracy and F1 are fractions from 0 to 1; null means no denominator.",
+    "Quality excludes failed calls; request health and selected-ticket coverage expose failures.",
+    "Unattempted selected tickets count against selected-ticket coverage until the run is complete.",
+    "Average latency excludes deliberate delay and measures successful classifier calls only.",
+    "Scores measure agreement with synthetic reference labels, not guaranteed correctness.",
+    "Small samples do not establish final quality; macro F1 uses labels present in references or predictions."
+  ],
+  "run_id": "classification-openai-gpt-oss-20b-a9a34c9b",
+  "report_scope": "full",
+  "generated_at": "2026-10-04T17:11:32.424900+00:00",
+  "failure": null
+}

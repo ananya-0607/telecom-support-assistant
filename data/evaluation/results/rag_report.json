@@ -1,0 +1,51 @@
+{
+  "Selected complaints": 5,
+  "Answers saved": 5,
+  "Reference status": "source-checked synthetic references; human review remains advisable",
+  "RAG quality": {
+    "Context precision": {
+      "average_score": 0.7131111110890118,
+      "scored_cases": 5
+    },
+    "Context recall": {
+      "average_score": 0.7666666666666666,
+      "scored_cases": 5
+    },
+    "Faithfulness": {
+      "average_score": 0.7362820512820513,
+      "scored_cases": 5
+    },
+    "Answer relevance": {
+      "average_score": 0.7847040618329927,
+      "scored_cases": 5
+    },
+    "Answer correctness": {
+      "average_score": 0.6016230098356001,
+      "scored_cases": 5
+    },
+    "Citation support": {
+      "average_score": 0.8433333333333334,
+      "scored_cases": 5
+    }
+  },
+  "Citation validity": {
+    "average_score": 1.0,
+    "applicable_cases": 5
+  },
+  "Request success rate": 1.0,
+  "Average end-to-end time in seconds": 2.345426319958642,
+  "End-to-end time for 95 percent of requests in seconds": 2.8492226998787373,
+  "Cases without usable evidence": 0,
+  "Evaluation errors": [],
+  "Pipeline errors": [],
+  "Notes": [
+    "Ragas judges meaning rather than exact wording. Scores are estimates, not human approval.",
+    "Missing or undefined scores are null, never replaced with zero.",
+    "Quality averages exclude failed/undefined scores; scored_cases exposes coverage.",
+    "Citation support is a separate LLM judgment of each step against its cited sources.",
+    "Latency excludes startup, deliberate API spacing and judge calls.",
+    "Faithfulness and citation support do not verify provider policy or technical safety.",
+    "Evaluation embeddings split long text into bounded nonoverlapping parts and pool normalized vectors with token-count weights. The LLM receives full text."
+  ],
+  "Latest failure": null
+}

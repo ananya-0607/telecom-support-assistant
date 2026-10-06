@@ -312,6 +312,11 @@ Caching reduces work, not quota guarantees. There is no general complaint-answer
 
 ## Evaluation
 
+Submission evidence is committed under [`data/evaluation/results/`](data/evaluation/results/):
+[classification report](data/evaluation/results/classification_report.json),
+[RAG report](data/evaluation/results/rag_report.json), and their run manifests.
+These preserve evaluated-version provenance; they are not automatically refreshed when the application changes.
+
 ### Classification
 
 ```mermaid
