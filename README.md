@@ -2,7 +2,7 @@
 
 A support-agent workspace that converts raw telecom complaints into classification, suggested resolution steps, information to ask, and supporting citations. It combines historical tickets and knowledge-base PDFs through semantic and keyword retrieval.
 
-**Status:** working local prototype with tested knowledge updates, evaluations and monitoring. Docker configuration is provided; container build/runtime verification remains pending. Suggested actions require agent review; production readiness is not claimed.
+**Status:** working local prototype with tested knowledge updates, evaluations and monitoring. Docker build/startup was verified; bundled-demo first-start verification on a fresh laptop is pending. Suggested actions require agent review; production readiness is not claimed.
 
 ## Contents
 
@@ -376,7 +376,7 @@ Request success: **5/5**; no cases without usable evidence. Average end-to-end t
 
 Scores are preliminary LLM judgments, not human approval. Correctness/faithfulness expose gaps. Citation validity alone does not prove sound actions. Meaning is judged rather than exact wording; shared model/provider can introduce correlated errors. Evaluation embeddings pool bounded long-text parts; the judge receives full text. Failed/undefined scores remain null with coverage exposed. Timing excludes startup, pacing and judges.
 
-Latest tests: **70 passed**, five dependency deprecation warnings. Fixtures/simulated LLM calls cover contracts, holdout exclusion, retrieval, citations, storage links, ingestion, taxonomy, replacement/reuse and monitoring. Manual checks covered broadband/mobile/billing/account answers and all update flows; these are functional checks, not independent expert quality approval.
+Latest tests: **71 passed**, five dependency deprecation warnings. Fixtures/simulated LLM calls cover contracts, holdout exclusion, retrieval, citations, storage links, ingestion, taxonomy, replacement/reuse and monitoring. Manual checks covered broadband/mobile/billing/account answers and all update flows; these are functional checks, not independent expert quality approval.
 
 Stop API/UI before evaluation to release embedded Qdrant's storage lock:
 
@@ -429,7 +429,7 @@ Copy-Item .env.example .env
 
 Skip copying if `.env` exists. Set `GROQ_API_KEY` privately; model defaults to `openai/gpt-oss-20b`. Process variables take precedence; restart after key changes. `SEMANTIC_THRESHOLD` is a process variable, default 0.30.
 
-Fresh checkouts must generate ignored indexes:
+Docker fresh checkouts now initialise a bundled synthetic demo database automatically. The commands below are only needed for rebuilding from source data or native Python setup:
 
 ```powershell
 python scripts/prepare_sources.py
@@ -491,7 +491,7 @@ flowchart LR
 **Output:** two container services, responses and persistent knowledge/logs.  
 **Files:** `Dockerfile`, `compose.yaml`, `.dockerignore`.
 
-Docker Desktop must run Linux containers. Stop native API/UI and evaluation processes first; only one process can own the local Qdrant index. The compose configuration reuses your existing `data/` and `config/`; a fresh checkout still needs the preparation steps above, or the container preparation commands below. Secrets/data are excluded from image layers. Compose reads your local `.env` and gives the key only to the API. Do not share expanded `docker compose config` output because it can contain credentials; use `config --quiet` for validation.
+Docker Desktop must run Linux containers. Stop native API/UI and evaluation processes first; only one process can own the local Qdrant index. The compose configuration reuses your existing `data/` and `config/`; a fresh checkout automatically loads the bundled demo database. Secrets and local working data are excluded from image layers; only the synthetic demo bundle is included. Compose reads your local `.env` and gives the key only to the API. Do not share expanded `docker compose config` output because it can contain credentials; use `config --quiet` for validation.
 
 ```powershell
 docker compose config --quiet
@@ -504,7 +504,7 @@ docker compose logs --tail 50 api
 
 First build downloads Python/CPU dependencies; startup may download model files if not cached. UI waits for API health. Ports bind only to localhost. Both images run as a non-root user; Linux host mount directories must be writable by UID 10001 (Windows Docker Desktop handles mounts differently). No automatic metadata requests or index rebuild happen on service startup.
 
-For preparation entirely inside Docker on a fresh checkout, build images then run commands one at a time **before** `up`:
+Optional source-data rebuild (not needed for the demo): build images then run commands one at a time **before** `up`:
 
 ```powershell
 docker compose build
@@ -524,7 +524,17 @@ docker compose start
 docker compose down
 ```
 
-Verify one complaint, an uploaded source and `/metrics`, then restart containers and confirm knowledge remains searchable. Metrics counters reset on API restart; host files remain. **Verification status:** configuration added; actual image build, startup and persistence check not yet confirmed.
+Verify one complaint, an uploaded source and `/metrics`, then restart containers and confirm knowledge remains searchable. Metrics counters reset on API restart; host files remain. The original container build/startup was verified by the developer. The new bundled-demo startup path still requires a fresh-laptop container check.
+
+### One-command demo startup on a fresh laptop
+
+The prepared SQLite/Qdrant snapshot is committed in `demo_data/` with matching examples, taxonomy and prepared records. It excludes keys, model weights, caches, logs and old builds. Stored text/page citations for locally uploaded PDFs are available; their original upload files are not bundled. First startup may download MiniLM weights.
+
+1. Download/clone this repository and open Docker Desktop.
+2. Copy `.env.example` to `.env` and add your own Groq key.
+3. Run `docker compose up --build -d`, then open `http://localhost:8501`.
+
+No PDF-classification or embedding-preparation commands are needed for the bundled demo. `scripts/start_api.py` copies the demo into writable `data/indexes/` only if there is no active database, publishing the pointer last. Existing knowledge is never overwritten. `active.json` contains a build ID and published taxonomy; it selects `search/builds/<build_id>/`, not the ticket text or vectors themselves. Stop services before native indexing/evaluation. See `docker compose logs --tail 80 api` for startup errors.
 
 ## Demo
 
@@ -567,9 +577,9 @@ Implemented exploration: controlled taxonomy extension, PDF replacement, metadat
 | Semantic retrieval/RAG | Working UI/API, MiniLM/Qdrant, BM25/RRF and citations |
 | Evolving data/classes | Ticket/PDF additions, replacement and controlled taxonomy |
 | Additional exploration | Hash reuse, staged labels and snapshots |
-| Evals/system health | Results, 70 tests, manual checks and metrics/logs |
+| Evals/system health | Results, 71 tests, manual checks and metrics/logs |
 | Design/production scale | Tradeoffs and future deployment considerations |
-| Docker packaging | Configuration provided; build/runtime verification pending |
+| Docker packaging | Original build/startup verified; portable demo startup awaiting fresh-laptop check |
 
 ## Folder structure
 

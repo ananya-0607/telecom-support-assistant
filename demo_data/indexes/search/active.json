@@ -1,0 +1,36 @@
+{
+  "build_id": "4f00b5c2c77b4539b18f1e32998145d2",
+  "taxonomy": {
+    "version": "6",
+    "categories": {
+      "Broadband intermittent drops": "Repeated broadband disconnections.",
+      "Slow speed": "Poor throughput or responsiveness while connected.",
+      "No connectivity / outage": "Internet unavailable or suspected outage.",
+      "Router / modem hardware": "Gateway hardware, power or thermal fault.",
+      "Billing dispute": "Disputed charges, payments or adjustments.",
+      "Plan change": "Changes to plans, allowances or effective dates.",
+      "Mobile signal": "Mobile coverage, voice or radio quality.",
+      "SIM / activation / porting": "SIM activation, replacement or number transfer.",
+      "Installation / technician visit": "Installation or field appointments.",
+      "Account / login / KYC": "Account access, identity checks or security.",
+      "International roaming": "Problems using mobile voice, texts or data while travelling abroad, including roaming eligibility, partner-network registration and roaming settings. Excludes domestic coverage issues and billing disputes."
+    },
+    "products": {
+      "Fiber Broadband & Gateway": "Fiber, ONT, gateway, Wi-Fi and mesh.",
+      "Mobile Postpaid / SIM": "Mobile services, SIM and porting.",
+      "Billing & Account Portal": "Billing, payments and account access.",
+      "Home Installation / Technical Visit": "Installation and field services.",
+      "International Roaming Pack": "A travel add-on to an existing mobile subscription that provides eligible international roaming services according to its destination coverage, validity and allowances."
+    },
+    "severities": {
+      "Low": "Routine enquiry or limited inconvenience with service substantially available.",
+      "Medium": "Degraded service, a partial fault or an administrative restriction.",
+      "High": "Complete loss of an important service, significant business disruption, suspected compromise or equipment safety concern. Major incidents also use High in this three-level prototype."
+    },
+    "sentiments": {
+      "Frustrated": "Expresses frustration, irritation, dissatisfaction or distress without clear strong anger. A service fault alone does not establish this tone.",
+      "Neutral": "Factual question or report without clear positive or negative emotion. Uncertainty or urgency alone does not imply negative emotion.",
+      "Angry": "Expresses strong anger, outrage or hostility. Distinguish strong anger from ordinary frustration; severity still reflects service impact."
+    }
+  }
+}

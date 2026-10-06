@@ -1,0 +1,145 @@
+{
+  "taxonomy_version": "6",
+  "examples": [
+    {
+      "ticket_id": "T-0005",
+      "complaint": "Living under the flight path seems to matter: wireless vanishes during logged radar events, although ethernet never blinks.",
+      "labels": {
+        "categories": [
+          "Broadband intermittent drops"
+        ],
+        "products": [
+          "Fiber Broadband & Gateway"
+        ],
+        "severity": "Medium",
+        "sentiment": "Neutral"
+      }
+    },
+    {
+      "ticket_id": "T-0116",
+      "complaint": "Traffic takes an unnecessarily long route after a backup transit path remained selected. There isn't a local Wi-Fi or cable problem.",
+      "labels": {
+        "categories": [
+          "Slow speed"
+        ],
+        "products": [
+          "Fiber Broadband & Gateway"
+        ],
+        "severity": "Medium",
+        "sentiment": "Frustrated"
+      }
+    },
+    {
+      "ticket_id": "T-0026",
+      "complaint": "The static address looks right but its subnet mask doesn't match the provider sheet. Even the WAN next hop is unreachable at this branch.",
+      "labels": {
+        "categories": [
+          "No connectivity / outage"
+        ],
+        "products": [
+          "Fiber Broadband & Gateway"
+        ],
+        "severity": "High",
+        "sentiment": "Neutral"
+      }
+    },
+    {
+      "ticket_id": "T-0031",
+      "complaint": "Save, restart, gone: every configuration change disappears. Storage-write alarms appear even when no reset is requested.",
+      "labels": {
+        "categories": [
+          "Router / modem hardware"
+        ],
+        "products": [
+          "Fiber Broadband & Gateway"
+        ],
+        "severity": "Medium",
+        "sentiment": "Frustrated"
+      }
+    },
+    {
+      "ticket_id": "T-0042",
+      "complaint": "Renewal total contains a surcharge outside the quote I accepted. Find the consent record if you believe it belongs there.",
+      "labels": {
+        "categories": [
+          "Billing dispute"
+        ],
+        "products": [
+          "Billing & Account Portal"
+        ],
+        "severity": "Medium",
+        "sentiment": "Angry"
+      }
+    },
+    {
+      "ticket_id": "T-0147",
+      "complaint": "Business messaging volume has grown; we'd like an eligible SMS allowance instead of changing every service on the account.",
+      "labels": {
+        "categories": [
+          "Plan change"
+        ],
+        "products": [
+          "Mobile Postpaid / SIM"
+        ],
+        "severity": "Low",
+        "sentiment": "Neutral"
+      }
+    },
+    {
+      "ticket_id": "T-0057",
+      "complaint": "That decorative metal cover looked good until it wrecked reception. Bare handset behaves normally at exactly the same spot.",
+      "labels": {
+        "categories": [
+          "Mobile signal"
+        ],
+        "products": [
+          "Mobile Postpaid / SIM"
+        ],
+        "severity": "Low",
+        "sentiment": "Neutral"
+      }
+    },
+    {
+      "ticket_id": "T-0165",
+      "complaint": "Unused activation code expired before we could install the eSIM. No profile was downloaded; we need the eligible official reissue route.",
+      "labels": {
+        "categories": [
+          "SIM / activation / porting"
+        ],
+        "products": [
+          "Mobile Postpaid / SIM"
+        ],
+        "severity": "Medium",
+        "sentiment": "Frustrated"
+      }
+    },
+    {
+      "ticket_id": "T-0074",
+      "complaint": "Protected frontage needs a lawful entry route for the connection. Please arrange planning review before anyone drills through it.",
+      "labels": {
+        "categories": [
+          "Installation / technician visit"
+        ],
+        "products": [
+          "Home Installation / Technical Visit"
+        ],
+        "severity": "Medium",
+        "sentiment": "Neutral"
+      }
+    },
+    {
+      "ticket_id": "T-0083",
+      "complaint": "KYC capture is black because I denied camera access when installing the app. I haven't submitted anything for review yet.",
+      "labels": {
+        "categories": [
+          "Account / login / KYC"
+        ],
+        "products": [
+          "Billing & Account Portal"
+        ],
+        "severity": "Low",
+        "sentiment": "Neutral"
+      }
+    }
+  ]
+}

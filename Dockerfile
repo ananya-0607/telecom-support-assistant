@@ -12,11 +12,12 @@ RUN python -m pip install torch==2.6.0 --index-url https://download.pytorch.org/
 COPY src ./src
 COPY scripts ./scripts
 COPY dataset_creation ./dataset_creation
+COPY demo_data ./demo_data
 ENV PYTHONPATH=/app/src HF_HOME=/app/data/indexes/huggingface_cache
 RUN mkdir -p data config logs && chown -R appuser:appuser /app
 USER appuser
 EXPOSE 8000
-CMD ["python", "-m", "uvicorn", "telecom_support.api:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+CMD ["python", "scripts/start_api.py"]
 
 FROM base AS ui
 RUN python -m pip install streamlit==1.45.1 "httpx>=0.27,<1"
